@@ -861,13 +861,17 @@ func analyzeAIOForAll(file *os.File) string {
 	startRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* _aio_log_start (0x[0-9a-fA-F]+)~([0-9a-fA-F]+)`)
 	finishRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* _aio_log_finish 1 (0x[0-9a-fA-F]+)~([0-9a-fA-F]+)`)
 
-	// Map to store all events by full range string
+	// Map to store all events by a unique key (using counter to ensure uniqueness)
 	eventsMap := make(map[string]struct {
 		startTime time.Time
 		endTime   time.Time
 		duration  time.Duration
 		rangeStr  string
+		blockAddr string
 	})
+
+	// Counter to ensure unique keys
+	counter := 0
 
 	// Read the file line by line
 	scanner := bufio.NewScanner(file)
@@ -876,6 +880,7 @@ func analyzeAIOForAll(file *os.File) string {
 
 		if startMatches := startRegex.FindStringSubmatch(line); len(startMatches) == 4 {
 			timestampStr := startMatches[1]
+			blockAddr := startMatches[2]
 			rangeStr := startMatches[2] + "~" + startMatches[3]
 
 			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
@@ -883,37 +888,49 @@ func analyzeAIOForAll(file *os.File) string {
 				continue
 			}
 
-			eventsMap[rangeStr] = struct {
+			// Use a unique key with counter to ensure uniqueness
+			counter++
+			key := fmt.Sprintf("%s_%s_%d", blockAddr, timestampStr, counter)
+			eventsMap[key] = struct {
 				startTime time.Time
 				endTime   time.Time
 				duration  time.Duration
 				rangeStr  string
+				blockAddr string
 			}{
 				startTime: timestamp,
 				rangeStr:  rangeStr,
+				blockAddr: blockAddr,
 			}
 
 		} else if finishMatches := finishRegex.FindStringSubmatch(line); len(finishMatches) == 4 {
 			timestampStr := finishMatches[1]
-			rangeStr := finishMatches[2] + "~" + finishMatches[3]
+			blockAddr := finishMatches[2]
 
 			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
 			if err != nil {
 				continue
 			}
 
-			if event, ok := eventsMap[rangeStr]; ok {
-				duration := timestamp.Sub(event.startTime)
-				eventsMap[rangeStr] = struct {
-					startTime time.Time
-					endTime   time.Time
-					duration  time.Duration
-					rangeStr  string
-				}{
-					startTime: event.startTime,
-					endTime:   timestamp,
-					duration:  duration,
-					rangeStr:  event.rangeStr,
+			// Find the matching start event by block address
+			// We need to iterate through the map to find the matching start event
+			for key, event := range eventsMap {
+				if event.blockAddr == blockAddr && event.endTime.IsZero() {
+					duration := timestamp.Sub(event.startTime)
+					eventsMap[key] = struct {
+						startTime time.Time
+						endTime   time.Time
+						duration  time.Duration
+						rangeStr  string
+						blockAddr string
+					}{
+						startTime: event.startTime,
+						endTime:   timestamp,
+						duration:  duration,
+						rangeStr:  event.rangeStr,
+						blockAddr: event.blockAddr,
+					}
+					break
 				}
 			}
 		}
@@ -922,7 +939,7 @@ func analyzeAIOForAll(file *os.File) string {
 	// Convert map to slice for sorting
 	var events []Event
 	for _, event := range eventsMap {
-		if event.duration >= 0 {
+		if !event.endTime.IsZero() && event.duration >= 0 {
 			events = append(events, Event{
 				startTime: event.startTime,
 				endTime:   event.endTime,
