@@ -1,3 +1,3 @@
-module analyze_ceph_log
+module github.com/liucxer/analyze_ceph_log
 
-go 1.23.3
+go 1.16

@@ -12,7 +12,7 @@
 - **统计摘要**：为每种操作类型显示全面的统计信息
 - **筛选功能**：允许按时间范围和持续时间/延迟进行筛选
 - **持续时间分布**：显示操作按持续时间/延迟范围的分布情况
-- **遗留脚本**：在 `old/` 目录中包含遗留的分析脚本
+- **模块化设计**：按照 Go 最佳实践组织为清晰、可维护的包结构
 
 ## 安装
 
@@ -39,7 +39,7 @@
 ./analyze_ceph <log_file> <analysis_type> [output.html]
 
 # 使用 go run
-go run analyze_ceph.go <log_file> <analysis_type> [output.html]
+go run main.go <log_file> <analysis_type> [output.html]
 ```
 
 ### 分析类型
@@ -52,17 +52,17 @@ go run analyze_ceph.go <log_file> <analysis_type> [output.html]
 
 1. 分析所有操作并生成 HTML 报告：
    ```bash
-   go run analyze_ceph.go /path/to/ceph-osd.log all analysis.html
+   go run main.go /path/to/ceph-osd.log all analysis.html
    ```
 
 2. 仅分析 AIO 操作：
    ```bash
-   go run analyze_ceph.go /path/to/ceph-osd.log aio aio_analysis.html
+   go run main.go /path/to/ceph-osd.log aio aio_analysis.html
    ```
 
 3. 分析 OSD 操作：
    ```bash
-   go run analyze_ceph.go /path/to/ceph-osd.log op osd_analysis.html
+   go run main.go /path/to/ceph-osd.log op osd_analysis.html
    ```
 
 ## 输出
@@ -79,15 +79,16 @@ go run analyze_ceph.go <log_file> <analysis_type> [output.html]
 
 ```
 analyze_ceph_log/
-├── analyze_ceph.go       # 主要分析工具
+├── main.go               # 主入口点
 ├── go.mod                # Go 模块文件
 ├── .gitignore            # Git 忽略文件
 ├── README.md             # 英文 README
 ├── README_zh.md          # 中文 README
-└── old/                  # 遗留分析脚本
-    ├── analyze_aio.go
-    ├── analyze_osd_op.go
-    └── analyze_osd_repop.go
+└── pkg/                  # 包目录
+    ├── analyzer/         # 分析逻辑
+    ├── html/             # HTML 生成
+    ├── log/              # 日志解析
+    └── types/            # 类型定义
 ```
 
 ## 工作原理

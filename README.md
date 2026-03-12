@@ -12,7 +12,7 @@ A comprehensive tool for analyzing Ceph OSD logs, including AIO operations, OSD 
 - **Summary Statistics**: Displays comprehensive statistics for each operation type
 - **Filtering Capabilities**: Allows filtering by time range and duration/latency
 - **Duration Distribution**: Shows distribution of operations by duration/latency ranges
-- **Legacy Scripts**: Includes legacy analysis scripts in the `old/` directory
+- **Modular Design**: Organized into clean, maintainable packages following Go best practices
 
 ## Installation
 
@@ -39,7 +39,7 @@ A comprehensive tool for analyzing Ceph OSD logs, including AIO operations, OSD 
 ./analyze_ceph <log_file> <analysis_type> [output.html]
 
 # Using go run
-go run analyze_ceph.go <log_file> <analysis_type> [output.html]
+go run main.go <log_file> <analysis_type> [output.html]
 ```
 
 ### Analysis Types
@@ -52,17 +52,17 @@ go run analyze_ceph.go <log_file> <analysis_type> [output.html]
 
 1. Analyze all operations and generate HTML report:
    ```bash
-   go run analyze_ceph.go /path/to/ceph-osd.log all analysis.html
+   go run main.go /path/to/ceph-osd.log all analysis.html
    ```
 
 2. Analyze only AIO operations:
    ```bash
-   go run analyze_ceph.go /path/to/ceph-osd.log aio aio_analysis.html
+   go run main.go /path/to/ceph-osd.log aio aio_analysis.html
    ```
 
 3. Analyze OSD operations:
    ```bash
-   go run analyze_ceph.go /path/to/ceph-osd.log op osd_analysis.html
+   go run main.go /path/to/ceph-osd.log op osd_analysis.html
    ```
 
 ## Output
@@ -79,15 +79,16 @@ The tool generates an HTML report with:
 
 ```
 analyze_ceph_log/
-├── analyze_ceph.go       # Main analysis tool
+├── main.go               # Main entry point
 ├── go.mod                # Go module file
 ├── .gitignore            # Git ignore file
 ├── README.md             # English README
 ├── README_zh.md          # Chinese README
-└── old/                  # Legacy analysis scripts
-    ├── analyze_aio.go
-    ├── analyze_osd_op.go
-    └── analyze_osd_repop.go
+└── pkg/                  # Package directory
+    ├── analyzer/         # Analysis logic
+    ├── html/             # HTML generation
+    ├── log/              # Log parsing
+    └── types/            # Type definitions
 ```
 
 ## How It Works
