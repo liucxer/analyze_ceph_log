@@ -37,11 +37,11 @@ func AnalyzeAIOEvents(events []types.Event) types.AnalysisResult {
 	})
 
 	return types.AnalysisResult{
-		Events:        events,
-		TotalEvents:   totalEvents,
-		TotalDuration: totalDuration,
-		MaxDuration:   maxDuration,
-		MinDuration:   minDuration,
+		Events:         events,
+		TotalEvents:    totalEvents,
+		TotalDuration:  totalDuration,
+		MaxDuration:    maxDuration,
+		MinDuration:    minDuration,
 		DurationCounts: durationCounts,
 	}
 }
@@ -76,11 +76,11 @@ func AnalyzeRepopEvents(events []types.Event) types.AnalysisResult {
 	})
 
 	return types.AnalysisResult{
-		Events:        events,
-		TotalEvents:   totalEvents,
-		TotalDuration: totalDuration,
-		MaxDuration:   maxDuration,
-		MinDuration:   minDuration,
+		Events:         events,
+		TotalEvents:    totalEvents,
+		TotalDuration:  totalDuration,
+		MaxDuration:    maxDuration,
+		MinDuration:    minDuration,
 		DurationCounts: durationCounts,
 	}
 }
@@ -143,5 +143,44 @@ func AnalyzeOSDOpEvents(events []types.OSDOpEvent) types.OSDOpAnalysisResult {
 		TotalInBytes:  totalInBytes,
 		TotalOutBytes: totalOutBytes,
 		LatencyCounts: latencyCounts,
+	}
+}
+
+// AnalyzeTransactionEvents analyzes transaction events and returns statistics
+func AnalyzeTransactionEvents(events []types.TransactionEvent) types.TransactionAnalysisResult {
+	totalTransactions := len(events)
+	totalDuration := time.Duration(0)
+	maxDuration := time.Duration(0)
+	minDuration := time.Duration(1000000000) // Start with a large value
+
+	// Count requests by all durations present in data
+	durationCounts := make(map[int]int)
+
+	for _, event := range events {
+		totalDuration += event.TotalDuration
+		if event.TotalDuration > maxDuration {
+			maxDuration = event.TotalDuration
+		}
+		if event.TotalDuration < minDuration {
+			minDuration = event.TotalDuration
+		}
+
+		// Categorize by duration
+		durationMs := int(float64(event.TotalDuration.Microseconds()) / 1000.0)
+		durationCounts[durationMs]++
+	}
+
+	// Sort events by start time
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].StartTime.Before(events[j].StartTime)
+	})
+
+	return types.TransactionAnalysisResult{
+		Events:            events,
+		TotalTransactions: totalTransactions,
+		TotalDuration:     totalDuration,
+		MaxDuration:       maxDuration,
+		MinDuration:       minDuration,
+		DurationCounts:    durationCounts,
 	}
 }

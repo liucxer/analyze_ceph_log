@@ -10,7 +10,7 @@ import (
 )
 
 // GenerateHTML generates HTML for all analysis types
-func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResult, osdOpResult types.OSDOpAnalysisResult) string {
+func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResult, osdOpResult types.OSDOpAnalysisResult, transactionResult types.TransactionAnalysisResult) string {
 	htmlContent := `<!DOCTYPE html>
 <html>
 <head>
@@ -149,6 +149,7 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
             <button class="tab active" onclick="openTab(event, 'aio')">AIO Operations</button>
             <button class="tab" onclick="openTab(event, 'repop')">OSD Repop Operations</button>
             <button class="tab" onclick="openTab(event, 'osd')">OSD Operations</button>
+            <button class="tab" onclick="openTab(event, 'transaction')">Transaction Analysis</button>
         </div>
         
         <!-- AIO Panel -->
@@ -181,6 +182,16 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
 	htmlContent += `
         </div>
         
+        <!-- Transaction Panel -->
+        <div id="transaction" class="panel">
+`
+
+	// Add Transaction analysis
+	htmlContent += generateTransactionHTML(transactionResult)
+
+	htmlContent += `
+        </div>
+        
         <script>
             function openTab(evt, tabName) {
                 var i, tabcontent, tablinks;
@@ -208,6 +219,9 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
                 var endTime = document.getElementById("aio-end-time").value;
                 var minDuration = document.getElementById("aio-min-duration").value;
                 var maxDuration = document.getElementById("aio-max-duration").value;
+                var blockType = document.getElementById("aio-block-type").value;
+                var minLength = document.getElementById("aio-min-length").value;
+                var maxLength = document.getElementById("aio-max-length").value;
                 var table = document.getElementById("aio-table");
                 var tr = table.getElementsByTagName("tr");
                 
@@ -215,6 +229,8 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
                     var tdStartTime = tr[i].getElementsByTagName("td")[0].textContent;
                     var tdEndTime = tr[i].getElementsByTagName("td")[1].textContent;
                     var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[2].textContent);
+                    var tdLength = parseInt(tr[i].getElementsByTagName("td")[4].textContent);
+                    var tdBlockType = tr[i].getElementsByTagName("td")[5].textContent;
                     
                     var match = true;
                     
@@ -238,6 +254,18 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
                         if (tdDuration > parseFloat(maxDuration)) match = false;
                     }
                     
+                    if (blockType) {
+                        if (tdBlockType !== blockType) match = false;
+                    }
+                    
+                    if (minLength) {
+                        if (tdLength < parseInt(minLength)) match = false;
+                    }
+                    
+                    if (maxLength) {
+                        if (tdLength > parseInt(maxLength)) match = false;
+                    }
+                    
                     tr[i].style.display = match ? "" : "none";
                 }
             }
@@ -247,6 +275,9 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
                 document.getElementById("aio-end-time").value = "";
                 document.getElementById("aio-min-duration").value = "";
                 document.getElementById("aio-max-duration").value = "";
+                document.getElementById("aio-block-type").value = "";
+                document.getElementById("aio-min-length").value = "";
+                document.getElementById("aio-max-length").value = "";
                 filterAIOTable();
             }
             
@@ -344,6 +375,54 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
                 document.getElementById("osd-max-latency").value = "";
                 filterOSDTable();
             }
+            
+            // Transaction Table Filter
+            function filterTransactionTable() {
+                var startTime = document.getElementById("transaction-start-time").value;
+                var endTime = document.getElementById("transaction-end-time").value;
+                var minDuration = document.getElementById("transaction-min-duration").value;
+                var maxDuration = document.getElementById("transaction-max-duration").value;
+                var table = document.getElementById("transaction-table");
+                var tr = table.getElementsByTagName("tr");
+                
+                for (var i = 1; i < tr.length; i++) {
+                    var tdStartTime = tr[i].getElementsByTagName("td")[1].textContent;
+                    var tdEndTime = tr[i].getElementsByTagName("td")[5].textContent;
+                    var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[6].textContent);
+                    
+                    var match = true;
+                    
+                    if (startTime) {
+                        var startDate = new Date(startTime.replace('T', ' '));
+                        var rowStartDate = new Date(tdStartTime);
+                        if (rowStartDate < startDate) match = false;
+                    }
+                    
+                    if (endTime) {
+                        var endDate = new Date(endTime.replace('T', ' '));
+                        var rowEndDate = new Date(tdEndTime);
+                        if (rowEndDate > endDate) match = false;
+                    }
+                    
+                    if (minDuration) {
+                        if (tdDuration < parseFloat(minDuration)) match = false;
+                    }
+                    
+                    if (maxDuration) {
+                        if (tdDuration > parseFloat(maxDuration)) match = false;
+                    }
+                    
+                    tr[i].style.display = match ? "" : "none";
+                }
+            }
+            
+            function resetTransactionFilter() {
+                document.getElementById("transaction-start-time").value = "";
+                document.getElementById("transaction-end-time").value = "";
+                document.getElementById("transaction-min-duration").value = "";
+                document.getElementById("transaction-max-duration").value = "";
+                filterTransactionTable();
+            }
         </script>
     </div>
 </body>
@@ -399,6 +478,17 @@ func generateAIOHTML(result types.AnalysisResult) string {
             <input type="number" id="aio-min-duration" min="0">
             <label>Max Duration (ms):</label>
             <input type="number" id="aio-max-duration" min="0">
+            <label>Block Type:</label>
+            <select id="aio-block-type">
+                <option value="">All</option>
+                <option value="block">block</option>
+                <option value="block.wal">block.wal</option>
+                <option value="block.db">block.db</option>
+            </select>
+            <label>Min Length (bytes):</label>
+            <input type="number" id="aio-min-length" min="0">
+            <label>Max Length (bytes):</label>
+            <input type="number" id="aio-max-length" min="0">
             <button type="button" onclick="filterAIOTable()">Filter</button>
             <button type="button" onclick="resetAIOFilter()">Reset</button>
         </div>
@@ -410,6 +500,8 @@ func generateAIOHTML(result types.AnalysisResult) string {
             <th>End Time</th>
             <th>Duration (ms)</th>
             <th>Range</th>
+            <th>Length (bytes)</th>
+            <th>Block Type</th>
         </tr>`
 
 	for _, event := range result.Events {
@@ -419,11 +511,15 @@ func generateAIOHTML(result types.AnalysisResult) string {
             <td>%s</td>
             <td>%.3f</td>
             <td>%s</td>
+            <td>%d</td>
+            <td>%s</td>
         </tr>`,
-			event.StartTime.Format("2006-01-02 15:04:05.000"),
-			event.EndTime.Format("2006-01-02 15:04:05.000"),
-			float64(event.Duration.Microseconds())/1000.0,
-			event.RangeStr)
+		event.StartTime.Format("2006-01-02 15:04:05.000"),
+		event.EndTime.Format("2006-01-02 15:04:05.000"),
+		float64(event.Duration.Microseconds())/1000.0,
+		event.RangeStr,
+		event.Length,
+		event.BlockType)
 	}
 
 	html += `
@@ -574,6 +670,8 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
             <th>In (bytes)</th>
             <th>Out (bytes)</th>
             <th>Latency (ms)</th>
+            <th>1st Repop (ms)</th>
+            <th>2nd Repop (ms)</th>
         </tr>`
 
 	for _, event := range result.Events {
@@ -588,16 +686,128 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
             <td>%d</td>
             <td>%d</td>
             <td>%.6f</td>
+            <td>%.3f</td>
+            <td>%.3f</td>
         </tr>`,
-			event.Timestamp.Format("2006-01-02 15:04:05.000"),
-			event.OpID,
-			event.PgID,
-			event.Object,
-			event.OpType,
-			event.RangeStr,
-			event.InBytes,
-			event.OutBytes,
-			event.Latency)
+		event.Timestamp.Format("2006-01-02 15:04:05.000"),
+		event.OpID,
+		event.PgID,
+		event.Object,
+		event.OpType,
+		event.RangeStr,
+		event.InBytes,
+		event.OutBytes,
+		event.Latency,
+		event.FirstRepopReply,
+		event.SecondRepopReply)
+	}
+
+	html += `
+    </table>
+    </div>`
+
+	return html
+}
+
+// generateTransactionHTML generates HTML for Transaction analysis
+func generateTransactionHTML(result types.TransactionAnalysisResult) string {
+	html := `
+    <h2>Transaction Analysis</h2>
+    <div class="summary">
+        <h3>Summary</h3>
+        <p>Total transactions: ` + strconv.Itoa(result.TotalTransactions) + `</p>`
+
+	if result.TotalTransactions > 0 {
+		averageDuration := result.TotalDuration / time.Duration(result.TotalTransactions)
+		html += fmt.Sprintf(`
+        <p>Average total duration: %.3f ms</p>
+        <p>Maximum total duration: %.3f ms</p>
+        <p>Minimum total duration: %.3f ms</p>`,
+			float64(averageDuration.Microseconds())/1000.0,
+			float64(result.MaxDuration.Microseconds())/1000.0,
+			float64(result.MinDuration.Microseconds())/1000.0)
+	}
+
+	// Add duration counts
+	html += `
+        <h4>Duration Counts:</h4>`
+
+	// Sort durations for consistent output
+	var durations []int
+	for duration := range result.DurationCounts {
+		durations = append(durations, duration)
+	}
+	sort.Ints(durations)
+
+	for _, duration := range durations {
+		html += fmt.Sprintf(`
+        <p>%dms: %d transactions</p>`, duration, result.DurationCounts[duration])
+	}
+
+	// Add filter form
+	html += `
+        <h4>Filter Options:</h4>
+        <div class="filter-form">
+            <label>Start Time:</label>
+            <input type="datetime-local" id="transaction-start-time">
+            <label>End Time:</label>
+            <input type="datetime-local" id="transaction-end-time">
+            <label>Min Duration (ms):</label>
+            <input type="number" id="transaction-min-duration" min="0">
+            <label>Max Duration (ms):</label>
+            <input type="number" id="transaction-max-duration" min="0">
+            <button type="button" onclick="filterTransactionTable()">Filter</button>
+            <button type="button" onclick="resetTransactionFilter()">Reset</button>
+        </div>
+    </div>
+    <div class="table-container">
+    <table id="transaction-table">
+        <tr>
+            <th>TID</th>
+            <th>Start Time</th>
+            <th>Issue Time</th>
+            <th>1st Reply</th>
+            <th>2nd Reply</th>
+            <th>Complete Time</th>
+            <th>Total (ms)</th>
+            <th>Issue (ms)</th>
+            <th>1st Reply (ms)</th>
+            <th>2nd Reply (ms)</th>
+            <th>OP ID</th>
+            <th>Object</th>
+            <th>Range</th>
+        </tr>`
+
+	for _, event := range result.Events {
+		html += fmt.Sprintf(`
+        <tr>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%.3f</td>
+            <td>%.3f</td>
+            <td>%.3f</td>
+            <td>%.3f</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+        </tr>`,
+		event.TID,
+		event.StartTime.Format("2006-01-02 15:04:05.000"),
+		event.IssueTime.Format("2006-01-02 15:04:05.000"),
+		event.FirstReplyTime.Format("2006-01-02 15:04:05.000"),
+		event.SecondReplyTime.Format("2006-01-02 15:04:05.000"),
+		event.CompleteTime.Format("2006-01-02 15:04:05.000"),
+		float64(event.TotalDuration.Microseconds())/1000.0,
+		float64(event.IssueDuration.Microseconds())/1000.0,
+		float64(event.FirstReplyDuration.Microseconds())/1000.0,
+		float64(event.SecondReplyDuration.Microseconds())/1000.0,
+		event.OpID,
+		event.Object,
+		event.RangeStr)
 	}
 
 	html += `

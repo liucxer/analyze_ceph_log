@@ -19,6 +19,7 @@ func main() {
 		fmt.Println("  aio - Analyze AIO operations")
 		fmt.Println("  repop - Analyze OSD repop operations")
 		fmt.Println("  op - Analyze OSD operations")
+		fmt.Println("  transaction - Analyze transaction operations")
 		fmt.Println("  all - Analyze all operation types")
 		os.Exit(1)
 	}
@@ -48,6 +49,8 @@ func main() {
 		analyzeRepop(file, outputFile)
 	case "op":
 		analyzeOSDOp(file, outputFile)
+	case "transaction":
+		analyzeTransaction(file, outputFile)
 	case "all":
 		analyzeAll(file, outputFile)
 	default:
@@ -65,6 +68,9 @@ func analyzeAIO(file *os.File, outputFile string) {
 
 	// Parse AIO events
 	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	events, err := log.ParseAIOEvents(scanner)
 	if err != nil {
 		fmt.Printf("Error parsing AIO events: %v\n", err)
@@ -75,7 +81,7 @@ func analyzeAIO(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeAIOEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(result, types.AnalysisResult{}, types.OSDOpAnalysisResult{})
+	htmlContent := html.GenerateHTML(result, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -92,6 +98,9 @@ func analyzeRepop(file *os.File, outputFile string) {
 
 	// Parse Repop events
 	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	events, err := log.ParseRepopEvents(scanner)
 	if err != nil {
 		fmt.Printf("Error parsing Repop events: %v\n", err)
@@ -102,7 +111,7 @@ func analyzeRepop(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeRepopEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, result, types.OSDOpAnalysisResult{})
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, result, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -119,6 +128,9 @@ func analyzeOSDOp(file *os.File, outputFile string) {
 
 	// Parse OSD Op events
 	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	events, err := log.ParseOSDOpEvents(scanner)
 	if err != nil {
 		fmt.Printf("Error parsing OSD Op events: %v\n", err)
@@ -129,7 +141,37 @@ func analyzeOSDOp(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeOSDOpEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, result)
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, result, types.TransactionAnalysisResult{})
+
+	// Write to file
+	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
+	if err != nil {
+		fmt.Printf("Error writing HTML file: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// analyzeTransaction analyzes transaction operations
+func analyzeTransaction(file *os.File, outputFile string) {
+	// Reset file pointer
+	file.Seek(0, 0)
+
+	// Parse Transaction events
+	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	events, err := log.ParseTransactionEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Transaction events: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Analyze events
+	result := analyzer.AnalyzeTransactionEvents(events)
+
+	// Generate HTML
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, result)
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -144,6 +186,9 @@ func analyzeAll(file *os.File, outputFile string) {
 	// Parse AIO events
 	file.Seek(0, 0)
 	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	aioEvents, err := log.ParseAIOEvents(scanner)
 	if err != nil {
 		fmt.Printf("Error parsing AIO events: %v\n", err)
@@ -153,6 +198,9 @@ func analyzeAll(file *os.File, outputFile string) {
 	// Parse Repop events
 	file.Seek(0, 0)
 	scanner = bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf = make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	repopEvents, err := log.ParseRepopEvents(scanner)
 	if err != nil {
 		fmt.Printf("Error parsing Repop events: %v\n", err)
@@ -162,9 +210,24 @@ func analyzeAll(file *os.File, outputFile string) {
 	// Parse OSD Op events
 	file.Seek(0, 0)
 	scanner = bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf = make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	osdOpEvents, err := log.ParseOSDOpEvents(scanner)
 	if err != nil {
 		fmt.Printf("Error parsing OSD Op events: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Parse Transaction events
+	file.Seek(0, 0)
+	scanner = bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf = make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	transactionEvents, err := log.ParseTransactionEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Transaction events: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -172,9 +235,10 @@ func analyzeAll(file *os.File, outputFile string) {
 	aioResult := analyzer.AnalyzeAIOEvents(aioEvents)
 	repopResult := analyzer.AnalyzeRepopEvents(repopEvents)
 	osdOpResult := analyzer.AnalyzeOSDOpEvents(osdOpEvents)
+	transactionResult := analyzer.AnalyzeTransactionEvents(transactionEvents)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(aioResult, repopResult, osdOpResult)
+	htmlContent := html.GenerateHTML(aioResult, repopResult, osdOpResult, transactionResult)
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)

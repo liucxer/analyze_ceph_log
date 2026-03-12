@@ -9,6 +9,7 @@ type AIOEvent struct {
 	Timestamp time.Time
 	BlockAddr string
 	RangeStr  string
+	Length    int
 	Duration  time.Duration
 }
 
@@ -22,15 +23,17 @@ type RepopEvent struct {
 
 // OSDOpEvent represents an OSD operation event
 type OSDOpEvent struct {
-	Timestamp time.Time
-	OpID      string
-	PgID      string
-	Object    string
-	OpType    string
-	RangeStr  string
-	InBytes   int
-	OutBytes  int
-	Latency   float64 // in milliseconds
+	Timestamp         time.Time
+	OpID              string
+	PgID              string
+	Object            string
+	OpType            string
+	RangeStr          string
+	InBytes           int
+	OutBytes          int
+	Latency           float64 // in milliseconds
+	FirstRepopReply   float64 // in milliseconds
+	SecondRepopReply  float64 // in milliseconds
 }
 
 // Event represents a generic event with start/end times and duration
@@ -39,6 +42,8 @@ type Event struct {
 	EndTime   time.Time
 	Duration  time.Duration
 	RangeStr  string
+	Length    int
+	BlockType string
 	OpID      string
 }
 
@@ -50,6 +55,33 @@ type AnalysisResult struct {
 	MaxDuration  time.Duration
 	MinDuration  time.Duration
 	DurationCounts map[int]int
+}
+
+// TransactionEvent represents a transaction event with different stages
+type TransactionEvent struct {
+	TID              string
+	StartTime        time.Time
+	IssueTime        time.Time
+	FirstReplyTime   time.Time
+	SecondReplyTime  time.Time
+	CompleteTime     time.Time
+	TotalDuration    time.Duration
+	IssueDuration    time.Duration
+	FirstReplyDuration time.Duration
+	SecondReplyDuration time.Duration
+	OpID             string
+	Object           string
+	RangeStr         string
+}
+
+// TransactionAnalysisResult represents the result of transaction analysis
+type TransactionAnalysisResult struct {
+	Events            []TransactionEvent
+	TotalTransactions int
+	TotalDuration     time.Duration
+	MaxDuration       time.Duration
+	MinDuration       time.Duration
+	DurationCounts    map[int]int
 }
 
 // OSDOpAnalysisResult represents the result of OSD operation analysis
