@@ -1,17 +1,19 @@
 # Ceph 日志分析工具
 
-一个全面的 Ceph OSD 日志分析工具，支持分析 AIO 操作、OSD repop 操作和 OSD 操作。
+一个全面的 Ceph OSD 日志分析工具，支持分析 AIO 操作、OSD repop 操作、OSD 操作和事务操作。
 
 ## 功能特性
 
-- **多类型分析**：支持分析三种类型的操作：
+- **多类型分析**：支持分析四种类型的操作：
   - AIO (异步 I/O) 操作
   - OSD repop 操作
   - OSD 操作
-- **HTML 输出**：生成结构良好的 HTML 报告，带有标签页界面
+  - 事务操作
+- **HTML 输出**：生成结构良好、视觉美观的 HTML 报告，带有标签页界面
 - **统计摘要**：为每种操作类型显示全面的统计信息
 - **筛选功能**：允许按时间范围和持续时间/延迟进行筛选
 - **持续时间分布**：显示操作按持续时间/延迟范围的分布情况
+- **查询原理解释**：提供每种操作类型如何解析和分析的清晰解释
 - **模块化设计**：按照 Go 最佳实践组织为清晰、可维护的包结构
 
 ## 安装
@@ -46,6 +48,7 @@ go run main.go <log_file> <analysis_type> [output.html]
 - `aio` - 分析 AIO 操作
 - `repop` - 分析 OSD repop 操作
 - `op` - 分析 OSD 操作
+- `transaction` - 分析事务操作
 - `all` - 分析所有操作类型
 
 ### 示例
@@ -65,11 +68,17 @@ go run main.go <log_file> <analysis_type> [output.html]
    go run main.go /path/to/ceph-osd.log op osd_analysis.html
    ```
 
+4. 分析事务操作：
+   ```bash
+   go run main.go /path/to/ceph-osd.log transaction transaction_analysis.html
+   ```
+
 ## 输出
 
 该工具生成的 HTML 报告包含：
 
 - **标签页界面**：每种操作类型都有单独的标签页
+- **查询原理部分**：每种操作类型如何解析和分析的清晰解释
 - **摘要部分**：每个标签页顶部的关键统计信息
 - **筛选表单**：每个表格的时间范围和持续时间/延迟筛选
 - **数据表格**：详细的操作列表，包含时间戳和持续时间

@@ -16,61 +16,88 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
 <head>
     <title>Ceph Log Analysis</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
         }
         h1 {
-            color: #333;
+            color: #2c3e50;
             text-align: center;
             margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
         }
         h2 {
-            color: #555;
+            color: #34495e;
             margin-top: 0;
             margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 500;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
         }
         h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        h4 {
             color: #666;
-            margin-top: 0;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 500;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
         /* Tab styles */
         .tabs {
             display: flex;
-            margin-bottom: 20px;
-            background-color: white;
-            border-radius: 8px 8px 0 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow: hidden;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            overflow-x: auto;
         }
         .tab {
-            padding: 15px 20px;
+            padding: 15px 25px;
             cursor: pointer;
-            background-color: #f1f1f1;
+            background-color: transparent;
             border: none;
             outline: none;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 500;
+            color: #666;
+            white-space: nowrap;
         }
         .tab:hover {
-            background-color: #ddd;
+            background-color: #e9ecef;
+            color: #3498db;
         }
         .tab.active {
-            background-color: #3498db;
-            color: white;
+            background-color: white;
+            color: #3498db;
+            border-bottom: 3px solid #3498db;
         }
         /* Panel styles */
         .panel {
-            background-color: white;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-radius: 0 8px 8px 8px;
+            padding: 30px;
             display: none;
         }
         .panel.active {
@@ -78,39 +105,57 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
         }
         /* Summary styles */
         .summary {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
             border-left: 4px solid #3498db;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .summary p {
+            margin-bottom: 8px;
         }
         /* Filter form styles */
         .filter-form {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f0f0f0;
-            border-radius: 6px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .filter-form label {
-            font-weight: bold;
-            margin-right: 5px;
+            font-weight: 500;
+            margin-right: 8px;
+            color: #555;
         }
-        .filter-form input {
-            padding: 5px;
+        .filter-form input,
+        .filter-form select {
+            padding: 8px 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        .filter-form input:focus,
+        .filter-form select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
         .filter-form button {
-            padding: 5px 10px;
+            padding: 8px 16px;
             background-color: #3498db;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
         }
         .filter-form button:hover {
             background-color: #2980b9;
@@ -119,24 +164,59 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 25px 0;
             background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid #e9ecef;
+            padding: 12px 15px;
             text-align: left;
         }
         th {
-            background-color: #f2f2f2;
-            font-weight: bold;
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
         }
         tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #f1f3f5;
         }
         .table-container {
             overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        /* Query principle section */
+        .query-principle {
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .query-principle h3 {
+            color: #34495e;
+            margin-bottom: 15px;
+        }
+        .query-principle p {
+            margin-bottom: 10px;
+            color: #666;
+        }
+        .query-principle ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        .query-principle li {
+            margin-bottom: 5px;
+            color: #666;
         }
     </style>
 </head>
@@ -435,6 +515,22 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
 func generateAIOHTML(result types.AnalysisResult) string {
 	html := `
     <h2>AIO Operations Analysis</h2>
+    <div class="query-principle">
+        <h3>Query Principle</h3>
+        <p>This analysis parses AIO (Asynchronous I/O) operations from the Ceph log. It identifies:</p>
+        <ul>
+            <li><strong>Start events</strong>: Log lines containing "_aio_log_start"</li>
+            <li><strong>Finish events</strong>: Log lines containing "_aio_log_finish"</li>
+        </ul>
+        <p>For each AIO operation, it extracts:</p>
+        <ul>
+            <li>Timestamp</li>
+            <li>Block address range</li>
+            <li>Data length (converted from hex to decimal)</li>
+            <li>Block type (block, block.wal, block.db)</li>
+        </ul>
+        <p>It matches start and finish events using the block address range as a unique key, then calculates the duration for each operation.</p>
+    </div>
     <div class="summary">
         <h3>Summary</h3>
         <p>Total AIO operations: ` + strconv.Itoa(result.TotalEvents) + `</p>`
@@ -533,6 +629,20 @@ func generateAIOHTML(result types.AnalysisResult) string {
 func generateRepopHTML(result types.AnalysisResult) string {
 	html := `
     <h2>OSD Repop Operations Analysis</h2>
+    <div class="query-principle">
+        <h3>Query Principle</h3>
+        <p>This analysis parses OSD repop (replication population) operations from the Ceph log. It identifies:</p>
+        <ul>
+            <li><strong>Start events</strong>: Log lines containing "dequeue_op" with "osd_repop"</li>
+            <li><strong>Finish events</strong>: Log lines containing "repop_commit" with "osd_repop"</li>
+        </ul>
+        <p>For each repop operation, it extracts:</p>
+        <ul>
+            <li>Timestamp</li>
+            <li>Operation ID</li>
+        </ul>
+        <p>It matches start and finish events using the operation ID as a unique key, then calculates the duration for each operation.</p>
+    </div>
     <div class="summary">
         <h3>Summary</h3>
         <p>Total repop operations: ` + strconv.Itoa(result.TotalEvents) + `</p>`
@@ -614,6 +724,26 @@ func generateRepopHTML(result types.AnalysisResult) string {
 func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
 	html := `
     <h2>OSD Operations Analysis</h2>
+    <div class="query-principle">
+        <h3>Query Principle</h3>
+        <p>This analysis parses OSD (Object Storage Daemon) operations from the Ceph log. It identifies:</p>
+        <ul>
+            <li><strong>OSD operation events</strong>: Log lines containing "log_op_stats osd_op"</li>
+        </ul>
+        <p>For each OSD operation, it extracts:</p>
+        <ul>
+            <li>Timestamp</li>
+            <li>Operation ID</li>
+            <li>PG ID</li>
+            <li>Object name</li>
+            <li>Operation type</li>
+            <li>Range</li>
+            <li>Input bytes</li>
+            <li>Output bytes</li>
+            <li>Latency (converted from seconds to milliseconds)</li>
+        </ul>
+        <p>It analyzes each operation individually, calculating latency and other metrics directly from the log entries.</p>
+    </div>
     <div class="summary">
         <h3>Summary</h3>
         <p>Total operations: ` + strconv.Itoa(result.TotalOps) + `</p>`
@@ -670,8 +800,6 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
             <th>In (bytes)</th>
             <th>Out (bytes)</th>
             <th>Latency (ms)</th>
-            <th>1st Repop (ms)</th>
-            <th>2nd Repop (ms)</th>
         </tr>`
 
 	for _, event := range result.Events {
@@ -686,20 +814,16 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
             <td>%d</td>
             <td>%d</td>
             <td>%.6f</td>
-            <td>%.3f</td>
-            <td>%.3f</td>
         </tr>`,
-		event.Timestamp.Format("2006-01-02 15:04:05.000"),
-		event.OpID,
-		event.PgID,
-		event.Object,
-		event.OpType,
-		event.RangeStr,
-		event.InBytes,
-		event.OutBytes,
-		event.Latency,
-		event.FirstRepopReply,
-		event.SecondRepopReply)
+	event.Timestamp.Format("2006-01-02 15:04:05.000"),
+	event.OpID,
+	event.PgID,
+	event.Object,
+	event.OpType,
+	event.RangeStr,
+	event.InBytes,
+	event.OutBytes,
+	event.Latency)
 	}
 
 	html += `
@@ -713,6 +837,25 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
 func generateTransactionHTML(result types.TransactionAnalysisResult) string {
 	html := `
     <h2>Transaction Analysis</h2>
+    <div class="query-principle">
+        <h3>Query Principle</h3>
+        <p>This analysis parses transaction operations from the Ceph log. It identifies different stages of a transaction:</p>
+        <ul>
+            <li><strong>Start events</strong>: Log lines containing "new_repop" with "rep_tid"</li>
+            <li><strong>Issue events</strong>: Log lines containing "issue_repop" with "rep_tid"</li>
+            <li><strong>Reply events</strong>: Log lines containing "do_repop_reply" with "tid"</li>
+            <li><strong>Complete events</strong>: Log lines containing "repop_all_committed" with "repop tid"</li>
+        </ul>
+        <p>For each transaction, it extracts:</p>
+        <ul>
+            <li>Transaction ID (TID)</li>
+            <li>Timestamps for each stage</li>
+            <li>Operation ID</li>
+            <li>Object name</li>
+            <li>Range</li>
+        </ul>
+        <p>It matches events using the transaction ID as a unique key, then calculates durations for each stage and the total transaction time.</p>
+    </div>
     <div class="summary">
         <h3>Summary</h3>
         <p>Total transactions: ` + strconv.Itoa(result.TotalTransactions) + `</p>`

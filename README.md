@@ -1,17 +1,19 @@
 # Ceph Log Analysis Tool
 
-A comprehensive tool for analyzing Ceph OSD logs, including AIO operations, OSD repop operations, and OSD operations.
+A comprehensive tool for analyzing Ceph OSD logs, including AIO operations, OSD repop operations, OSD operations, and transaction operations.
 
 ## Features
 
-- **Multi-type Analysis**: Analyzes three types of operations:
+- **Multi-type Analysis**: Analyzes four types of operations:
   - AIO (Asynchronous I/O) operations
   - OSD repop operations
   - OSD operations
-- **HTML Output**: Generates a well-structured HTML report with tabbed interface
+  - Transaction operations
+- **HTML Output**: Generates a well-structured, visually appealing HTML report with tabbed interface
 - **Summary Statistics**: Displays comprehensive statistics for each operation type
 - **Filtering Capabilities**: Allows filtering by time range and duration/latency
 - **Duration Distribution**: Shows distribution of operations by duration/latency ranges
+- **Query Principle Explanation**: Provides clear explanation of how each operation type is parsed and analyzed
 - **Modular Design**: Organized into clean, maintainable packages following Go best practices
 
 ## Installation
@@ -46,6 +48,7 @@ go run main.go <log_file> <analysis_type> [output.html]
 - `aio` - Analyze AIO operations
 - `repop` - Analyze OSD repop operations
 - `op` - Analyze OSD operations
+- `transaction` - Analyze transaction operations
 - `all` - Analyze all operation types
 
 ### Examples
@@ -65,11 +68,17 @@ go run main.go <log_file> <analysis_type> [output.html]
    go run main.go /path/to/ceph-osd.log op osd_analysis.html
    ```
 
+4. Analyze transaction operations:
+   ```bash
+   go run main.go /path/to/ceph-osd.log transaction transaction_analysis.html
+   ```
+
 ## Output
 
 The tool generates an HTML report with:
 
 - **Tabbed Interface**: Separate tabs for each operation type
+- **Query Principle Section**: Clear explanation of how each operation type is parsed and analyzed
 - **Summary Section**: Key statistics at the top of each tab
 - **Filter Form**: Time range and duration/latency filters for each table
 - **Data Table**: Detailed list of operations with timestamps and durations
