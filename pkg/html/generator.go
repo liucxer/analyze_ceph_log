@@ -277,7 +277,7 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
             <button class="tab active" onclick="openTab(event, 'aio')" data-zh="AIO 操作" data-en="AIO Operations">AIO 操作</button>
             <button class="tab" onclick="openTab(event, 'repop')" data-zh="OSD Repop 操作" data-en="OSD Repop Operations">OSD Repop 操作</button>
             <button class="tab" onclick="openTab(event, 'osd')" data-zh="OSD 操作" data-en="OSD Operations">OSD 操作</button>
-            <button class="tab" onclick="openTab(event, 'transaction')" data-zh="事务分析" data-en="Transaction Analysis">事务分析</button>
+            <button class="tab" onclick="openTab(event, 'transaction')" data-zh="复制事务" data-en="Replication Transaction">复制事务</button>
         </div>
         
         <!-- AIO Panel -->
@@ -965,19 +965,19 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
 // generateTransactionHTML generates HTML for Transaction analysis
 func generateTransactionHTML(result types.TransactionAnalysisResult) string {
 	html := `
-    <h2 data-zh="事务分析" data-en="Transaction Analysis">事务分析</h2>
+    <h2 data-zh="复制事务" data-en="Replication Transaction">复制事务</h2>
     <div class="layout">
         <div class="left-panel">
             <div class="query-principle">
                 <h3 data-zh="查询原理" data-en="Query Principle">查询原理</h3>
-                <p data-zh="此分析解析 Ceph 日志中的事务操作。它识别事务的不同阶段：" data-en="This analysis parses transaction operations from the Ceph log. It identifies different stages of a transaction:">此分析解析 Ceph 日志中的事务操作。它识别事务的不同阶段：</p>
+                <p data-zh="此分析解析 Ceph 日志中的复制事务操作。它识别复制事务的不同阶段：" data-en="This analysis parses replication transaction operations from the Ceph log. It identifies different stages of a replication transaction:">此分析解析 Ceph 日志中的复制事务操作。它识别复制事务的不同阶段：</p>
                 <ul>
                     <li data-zh="<strong>开始事件</strong>：包含 "new_repop" 和 "rep_tid" 的日志行" data-en="<strong>Start events</strong>: Log lines containing "new_repop" with "rep_tid""</li>
                     <li data-zh="<strong>发出事件</strong>：包含 "issue_repop" 和 "rep_tid" 的日志行" data-en="<strong>Issue events</strong>: Log lines containing "issue_repop" with "rep_tid""</li>
                     <li data-zh="<strong>回复事件</strong>：包含 "do_repop_reply" 和 "tid" 的日志行" data-en="<strong>Reply events</strong>: Log lines containing "do_repop_reply" with "tid""</li>
                     <li data-zh="<strong>完成事件</strong>：包含 "repop_all_committed" 和 "repop tid" 的日志行" data-en="<strong>Complete events</strong>: Log lines containing "repop_all_committed" with "repop tid""</li>
                 </ul>
-                <p data-zh="对于每个事务，它提取：" data-en="For each transaction, it extracts:">对于每个事务，它提取：</p>
+                <p data-zh="对于每个复制事务，它提取：" data-en="For each replication transaction, it extracts:">对于每个复制事务，它提取：</p>
                 <ul>
                     <li data-zh="事务 ID (TID)" data-en="Transaction ID (TID)">事务 ID (TID)</li>
                     <li data-zh="每个阶段的时间戳" data-en="Timestamps for each stage">每个阶段的时间戳</li>
@@ -985,18 +985,18 @@ func generateTransactionHTML(result types.TransactionAnalysisResult) string {
                     <li data-zh="对象名称" data-en="Object name">对象名称</li>
                     <li data-zh="范围" data-en="Range">范围</li>
                 </ul>
-                <p data-zh="它使用事务 ID 作为唯一键匹配事件，然后计算每个阶段的持续时间和总事务时间。" data-en="It matches events using the transaction ID as a unique key, then calculates durations for each stage and the total transaction time.">它使用事务 ID 作为唯一键匹配事件，然后计算每个阶段的持续时间和总事务时间。</p>
+                <p data-zh="它使用复制事务 ID 作为唯一键匹配事件，然后计算每个阶段的持续时间和总复制事务时间。" data-en="It matches events using the replication transaction ID as a unique key, then calculates durations for each stage and the total replication transaction time.">它使用复制事务 ID 作为唯一键匹配事件，然后计算每个阶段的持续时间和总复制事务时间。</p>
             </div>
             <div class="summary">
                 <h3 data-zh="摘要" data-en="Summary">摘要</h3>
-                <p data-zh="总事务数：" data-en="Total transactions: ">总事务数：` + strconv.Itoa(result.TotalTransactions) + `</p>`
+                <p data-zh="总复制事务数：" data-en="Total replication transactions: ">总复制事务数：` + strconv.Itoa(result.TotalTransactions) + `</p>`
 
 	if result.TotalTransactions > 0 {
 		averageDuration := result.TotalDuration / time.Duration(result.TotalTransactions)
 		html += fmt.Sprintf(`
-                <p data-zh="平均总持续时间：" data-en="Average total duration: ">平均总持续时间：%.3f ms</p>
-                <p data-zh="最大总持续时间：" data-en="Maximum total duration: ">最大总持续时间：%.3f ms</p>
-                <p data-zh="最小总持续时间：" data-en="Minimum total duration: ">最小总持续时间：%.3f ms</p>`,
+                <p data-zh="平均复制事务持续时间：" data-en="Average replication transaction duration: ">平均复制事务持续时间：%.3f ms</p>
+                <p data-zh="最大复制事务持续时间：" data-en="Maximum replication transaction duration: ">最大复制事务持续时间：%.3f ms</p>
+                <p data-zh="最小复制事务持续时间：" data-en="Minimum replication transaction duration: ">最小复制事务持续时间：%.3f ms</p>`,
 			float64(averageDuration.Microseconds())/1000.0,
 			float64(result.MaxDuration.Microseconds())/1000.0,
 			float64(result.MinDuration.Microseconds())/1000.0)
@@ -1004,7 +1004,7 @@ func generateTransactionHTML(result types.TransactionAnalysisResult) string {
 
 	// Add duration counts
 	html += `
-                <h4 data-zh="持续时间计数：" data-en="Duration Counts:">持续时间计数：</h4>`
+                <h4 data-zh="复制事务持续时间计数：" data-en="Replication Transaction Duration Counts:">复制事务持续时间计数：</h4>`
 
 	// Sort durations for consistent output
 	var durations []int
