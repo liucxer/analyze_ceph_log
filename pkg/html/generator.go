@@ -14,6 +14,7 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
 	htmlContent := `<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Ceph Log Analysis</title>
     <style>
         * {
@@ -60,12 +61,32 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
             font-weight: 500;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 0 auto;
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             overflow: hidden;
+        }
+        /* Language button styles */
+        .language-btn {
+            padding: 8px 16px;
+            margin-left: 10px;
+            background-color: #f1f1f1;
+            color: #333;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .language-btn:hover {
+            background-color: #ddd;
+        }
+        .language-btn.active {
+            background-color: #3498db;
+            color: white;
         }
         /* Tab styles */
         .tabs {
@@ -243,14 +264,20 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
 </head>
 <body>
     <div class="container">
-        <h1>Ceph Log Analysis</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 id="page-title">Ceph 日志分析</h1>
+            <div>
+                <button onclick="switchLanguage('zh')" id="zh-btn" class="language-btn active">中文</button>
+                <button onclick="switchLanguage('en')" id="en-btn" class="language-btn">English</button>
+            </div>
+        </div>
         
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="openTab(event, 'aio')">AIO Operations</button>
-            <button class="tab" onclick="openTab(event, 'repop')">OSD Repop Operations</button>
-            <button class="tab" onclick="openTab(event, 'osd')">OSD Operations</button>
-            <button class="tab" onclick="openTab(event, 'transaction')">Transaction Analysis</button>
+            <button class="tab active" onclick="openTab(event, 'aio')" data-zh="AIO 操作" data-en="AIO Operations">AIO 操作</button>
+            <button class="tab" onclick="openTab(event, 'repop')" data-zh="OSD Repop 操作" data-en="OSD Repop Operations">OSD Repop 操作</button>
+            <button class="tab" onclick="openTab(event, 'osd')" data-zh="OSD 操作" data-en="OSD Operations">OSD 操作</button>
+            <button class="tab" onclick="openTab(event, 'transaction')" data-zh="事务分析" data-en="Transaction Analysis">事务分析</button>
         </div>
         
         <!-- AIO Panel -->
@@ -294,6 +321,72 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
         </div>
         
         <script>
+            // Language switching functionality
+            function switchLanguage(lang) {
+                // Update language buttons
+                document.getElementById('zh-btn').classList.remove('active');
+                document.getElementById('en-btn').classList.remove('active');
+                document.getElementById(lang + '-btn').classList.add('active');
+                
+                // Update page title
+                const pageTitle = document.getElementById('page-title');
+                if (lang === 'zh') {
+                    pageTitle.textContent = 'Ceph 日志分析';
+                } else {
+                    pageTitle.textContent = 'Ceph Log Analysis';
+                }
+                
+                // Update tab labels
+                const tabs = document.getElementsByClassName('tab');
+                for (let i = 0; i < tabs.length; i++) {
+                    tabs[i].textContent = tabs[i].getAttribute('data-' + lang);
+                }
+                
+                // Update AIO panel
+                updateAIOPanel(lang);
+                
+                // Update Repop panel
+                updateRepopPanel(lang);
+                
+                // Update OSD panel
+                updateOSDPanel(lang);
+                
+                // Update Transaction panel
+                updateTransactionPanel(lang);
+            }
+            
+            function updateAIOPanel(lang) {
+                const panel = document.getElementById('aio');
+                const elements = panel.querySelectorAll('[data-zh]');
+                elements.forEach(el => {
+                    el.textContent = el.getAttribute('data-' + lang);
+                });
+            }
+            
+            function updateRepopPanel(lang) {
+                const panel = document.getElementById('repop');
+                const elements = panel.querySelectorAll('[data-zh]');
+                elements.forEach(el => {
+                    el.textContent = el.getAttribute('data-' + lang);
+                });
+            }
+            
+            function updateOSDPanel(lang) {
+                const panel = document.getElementById('osd');
+                const elements = panel.querySelectorAll('[data-zh]');
+                elements.forEach(el => {
+                    el.textContent = el.getAttribute('data-' + lang);
+                });
+            }
+            
+            function updateTransactionPanel(lang) {
+                const panel = document.getElementById('transaction');
+                const elements = panel.querySelectorAll('[data-zh]');
+                elements.forEach(el => {
+                    el.textContent = el.getAttribute('data-' + lang);
+                });
+            }
+            
             function openTab(evt, tabName) {
                 var i, tabcontent, tablinks;
                 
@@ -535,35 +628,35 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
 // generateAIOHTML generates HTML for AIO analysis
 func generateAIOHTML(result types.AnalysisResult) string {
 	html := `
-    <h2>AIO Operations Analysis</h2>
+    <h2 data-zh="AIO 操作分析" data-en="AIO Operations Analysis">AIO 操作分析</h2>
     <div class="layout">
         <div class="left-panel">
             <div class="query-principle">
-                <h3>Query Principle</h3>
-                <p>This analysis parses AIO (Asynchronous I/O) operations from the Ceph log. It identifies:</p>
+                <h3 data-zh="查询原理" data-en="Query Principle">查询原理</h3>
+                <p data-zh="此分析解析 Ceph 日志中的 AIO (异步 I/O) 操作。它识别：" data-en="This analysis parses AIO (Asynchronous I/O) operations from the Ceph log. It identifies:">此分析解析 Ceph 日志中的 AIO (异步 I/O) 操作。它识别：</p>
                 <ul>
-                    <li><strong>Start events</strong>: Log lines containing "_aio_log_start"</li>
-                    <li><strong>Finish events</strong>: Log lines containing "_aio_log_finish"</li>
+                    <li data-zh="<strong>开始事件</strong>：包含 "_aio_log_start" 的日志行" data-en="<strong>Start events</strong>: Log lines containing "_aio_log_start""><strong>开始事件</strong>：包含 "_aio_log_start" 的日志行</li>
+                    <li data-zh="<strong>结束事件</strong>：包含 "_aio_log_finish" 的日志行" data-en="<strong>Finish events</strong>: Log lines containing "_aio_log_finish""><strong>结束事件</strong>：包含 "_aio_log_finish" 的日志行</li>
                 </ul>
-                <p>For each AIO operation, it extracts:</p>
+                <p data-zh="对于每个 AIO 操作，它提取：" data-en="For each AIO operation, it extracts:">对于每个 AIO 操作，它提取：</p>
                 <ul>
-                    <li>Timestamp</li>
-                    <li>Block address range</li>
-                    <li>Data length (converted from hex to decimal)</li>
-                    <li>Block type (block, block.wal, block.db)</li>
+                    <li data-zh="时间戳" data-en="Timestamp">时间戳</li>
+                    <li data-zh="块地址范围" data-en="Block address range">块地址范围</li>
+                    <li data-zh="数据长度（从十六进制转换为十进制）" data-en="Data length (converted from hex to decimal)">数据长度（从十六进制转换为十进制）</li>
+                    <li data-zh="块类型（block, block.wal, block.db）" data-en="Block type (block, block.wal, block.db)">块类型（block, block.wal, block.db）</li>
                 </ul>
-                <p>It matches start and finish events using the block address range as a unique key, then calculates the duration for each operation.</p>
+                <p data-zh="它使用块地址范围作为唯一键匹配开始和结束事件，然后计算每个操作的持续时间。" data-en="It matches start and finish events using the block address range as a unique key, then calculates the duration for each operation.">它使用块地址范围作为唯一键匹配开始和结束事件，然后计算每个操作的持续时间。</p>
             </div>
             <div class="summary">
-                <h3>Summary</h3>
-                <p>Total AIO operations: ` + strconv.Itoa(result.TotalEvents) + `</p>`
+                <h3 data-zh="摘要" data-en="Summary">摘要</h3>
+                <p data-zh="总 AIO 操作数：" data-en="Total AIO operations: ">总 AIO 操作数：` + strconv.Itoa(result.TotalEvents) + `</p>`
 
 	if result.TotalEvents > 0 {
 		averageDuration := result.TotalDuration / time.Duration(result.TotalEvents)
 		html += fmt.Sprintf(`
-                <p>Average duration: %.3f ms</p>
-                <p>Maximum duration: %.3f ms</p>
-                <p>Minimum duration: %.3f ms</p>`,
+                <p data-zh="平均持续时间：" data-en="Average duration: ">平均持续时间：%.3f ms</p>
+                <p data-zh="最大持续时间：" data-en="Maximum duration: ">最大持续时间：%.3f ms</p>
+                <p data-zh="最小持续时间：" data-en="Minimum duration: ">最小持续时间：%.3f ms</p>`,
 			float64(averageDuration.Microseconds())/1000.0,
 			float64(result.MaxDuration.Microseconds())/1000.0,
 			float64(result.MinDuration.Microseconds())/1000.0)
@@ -571,7 +664,7 @@ func generateAIOHTML(result types.AnalysisResult) string {
 
 	// Add duration counts
 	html += `
-                <h4>Duration Counts:</h4>`
+                <h4 data-zh="持续时间计数：" data-en="Duration Counts:">持续时间计数：</h4>`
 
 	// Sort durations for consistent output
 	var durations []int
@@ -590,38 +683,38 @@ func generateAIOHTML(result types.AnalysisResult) string {
         </div>
         <div class="right-panel">
             <div class="filter-form">
-                <h4>Filter Options:</h4>
-                <label>Start Time:</label>
+                <h4 data-zh="筛选选项：" data-en="Filter Options:">筛选选项：</h4>
+                <label data-zh="开始时间：" data-en="Start Time:">开始时间：</label>
                 <input type="datetime-local" id="aio-start-time">
-                <label>End Time:</label>
+                <label data-zh="结束时间：" data-en="End Time:">结束时间：</label>
                 <input type="datetime-local" id="aio-end-time">
-                <label>Min Duration (ms):</label>
+                <label data-zh="最小持续时间 (ms)：" data-en="Min Duration (ms):">最小持续时间 (ms)：</label>
                 <input type="number" id="aio-min-duration" min="0">
-                <label>Max Duration (ms):</label>
+                <label data-zh="最大持续时间 (ms)：" data-en="Max Duration (ms):">最大持续时间 (ms)：</label>
                 <input type="number" id="aio-max-duration" min="0">
-                <label>Block Type:</label>
+                <label data-zh="块类型：" data-en="Block Type:">块类型：</label>
                 <select id="aio-block-type">
-                    <option value="">All</option>
-                    <option value="block">block</option>
-                    <option value="block.wal">block.wal</option>
-                    <option value="block.db">block.db</option>
+                    <option value="" data-zh="全部" data-en="All">全部</option>
+                    <option value="block" data-zh="block" data-en="block">block</option>
+                    <option value="block.wal" data-zh="block.wal" data-en="block.wal">block.wal</option>
+                    <option value="block.db" data-zh="block.db" data-en="block.db">block.db</option>
                 </select>
-                <label>Min Length (bytes):</label>
+                <label data-zh="最小长度 (字节)：" data-en="Min Length (bytes):">最小长度 (字节)：</label>
                 <input type="number" id="aio-min-length" min="0">
-                <label>Max Length (bytes):</label>
+                <label data-zh="最大长度 (字节)：" data-en="Max Length (bytes):">最大长度 (字节)：</label>
                 <input type="number" id="aio-max-length" min="0">
-                <button type="button" onclick="filterAIOTable()">Filter</button>
-                <button type="button" onclick="resetAIOFilter()">Reset</button>
+                <button type="button" onclick="filterAIOTable()" data-zh="筛选" data-en="Filter">筛选</button>
+                <button type="button" onclick="resetAIOFilter()" data-zh="重置" data-en="Reset">重置</button>
             </div>
             <div class="table-container">
             <table id="aio-table">
                 <tr>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Duration (ms)</th>
-                    <th>Range</th>
-                    <th>Length (bytes)</th>
-                    <th>Block Type</th>
+                    <th data-zh="开始时间" data-en="Start Time">开始时间</th>
+                    <th data-zh="结束时间" data-en="End Time">结束时间</th>
+                    <th data-zh="持续时间 (ms)" data-en="Duration (ms)">持续时间 (ms)</th>
+                    <th data-zh="范围" data-en="Range">范围</th>
+                    <th data-zh="长度 (字节)" data-en="Length (bytes)">长度 (字节)</th>
+                    <th data-zh="块类型" data-en="Block Type">块类型</th>
                 </tr>`
 
 	for _, event := range result.Events {
@@ -654,33 +747,33 @@ func generateAIOHTML(result types.AnalysisResult) string {
 // generateRepopHTML generates HTML for Repop analysis
 func generateRepopHTML(result types.AnalysisResult) string {
 	html := `
-    <h2>OSD Repop Operations Analysis</h2>
+    <h2 data-zh="OSD Repop 操作分析" data-en="OSD Repop Operations Analysis">OSD Repop 操作分析</h2>
     <div class="layout">
         <div class="left-panel">
             <div class="query-principle">
-                <h3>Query Principle</h3>
-                <p>This analysis parses OSD repop (replication population) operations from the Ceph log. It identifies:</p>
+                <h3 data-zh="查询原理" data-en="Query Principle">查询原理</h3>
+                <p data-zh="此分析解析 Ceph 日志中的 OSD repop（复制填充）操作。它识别：" data-en="This analysis parses OSD repop (replication population) operations from the Ceph log. It identifies:">此分析解析 Ceph 日志中的 OSD repop（复制填充）操作。它识别：</p>
                 <ul>
-                    <li><strong>Start events</strong>: Log lines containing "dequeue_op" with "osd_repop"</li>
-                    <li><strong>Finish events</strong>: Log lines containing "repop_commit" with "osd_repop"</li>
+                    <li data-zh="<strong>开始事件</strong>：包含 "dequeue_op" 和 "osd_repop" 的日志行" data-en="<strong>Start events</strong>: Log lines containing "dequeue_op" with "osd_repop""><strong>开始事件</strong>：包含 "dequeue_op" 和 "osd_repop" 的日志行</li>
+                    <li data-zh="<strong>结束事件</strong>：包含 "repop_commit" 和 "osd_repop" 的日志行" data-en="<strong>Finish events</strong>: Log lines containing "repop_commit" with "osd_repop""><strong>结束事件</strong>：包含 "repop_commit" 和 "osd_repop" 的日志行</li>
                 </ul>
-                <p>For each repop operation, it extracts:</p>
+                <p data-zh="对于每个 repop 操作，它提取：" data-en="For each repop operation, it extracts:">对于每个 repop 操作，它提取：</p>
                 <ul>
-                    <li>Timestamp</li>
-                    <li>Operation ID</li>
+                    <li data-zh="时间戳" data-en="Timestamp">时间戳</li>
+                    <li data-zh="操作 ID" data-en="Operation ID">操作 ID</li>
                 </ul>
-                <p>It matches start and finish events using the operation ID as a unique key, then calculates the duration for each operation.</p>
+                <p data-zh="它使用操作 ID 作为唯一键匹配开始和结束事件，然后计算每个操作的持续时间。" data-en="It matches start and finish events using the operation ID as a unique key, then calculates the duration for each operation.">它使用操作 ID 作为唯一键匹配开始和结束事件，然后计算每个操作的持续时间。</p>
             </div>
             <div class="summary">
-                <h3>Summary</h3>
-                <p>Total repop operations: ` + strconv.Itoa(result.TotalEvents) + `</p>`
+                <h3 data-zh="摘要" data-en="Summary">摘要</h3>
+                <p data-zh="总 repop 操作数：" data-en="Total repop operations: ">总 repop 操作数：` + strconv.Itoa(result.TotalEvents) + `</p>`
 
 	if result.TotalEvents > 0 {
 		averageDuration := result.TotalDuration / time.Duration(result.TotalEvents)
 		html += fmt.Sprintf(`
-                <p>Average duration: %.3f ms</p>
-                <p>Maximum duration: %.3f ms</p>
-                <p>Minimum duration: %.3f ms</p>`,
+                <p data-zh="平均持续时间：" data-en="Average duration: ">平均持续时间：%.3f ms</p>
+                <p data-zh="最大持续时间：" data-en="Maximum duration: ">最大持续时间：%.3f ms</p>
+                <p data-zh="最小持续时间：" data-en="Minimum duration: ">最小持续时间：%.3f ms</p>`,
 			float64(averageDuration.Microseconds())/1000.0,
 			float64(result.MaxDuration.Microseconds())/1000.0,
 			float64(result.MinDuration.Microseconds())/1000.0)
@@ -688,7 +781,7 @@ func generateRepopHTML(result types.AnalysisResult) string {
 
 	// Add duration counts
 	html += `
-                <h4>Duration Counts:</h4>`
+                <h4 data-zh="持续时间计数：" data-en="Duration Counts:">持续时间计数：</h4>`
 
 	// Sort durations for consistent output
 	var durations []int
@@ -707,25 +800,25 @@ func generateRepopHTML(result types.AnalysisResult) string {
         </div>
         <div class="right-panel">
             <div class="filter-form">
-                <h4>Filter Options:</h4>
-                <label>Start Time:</label>
+                <h4 data-zh="筛选选项：" data-en="Filter Options:">筛选选项：</h4>
+                <label data-zh="开始时间：" data-en="Start Time:">开始时间：</label>
                 <input type="datetime-local" id="repop-start-time">
-                <label>End Time:</label>
+                <label data-zh="结束时间：" data-en="End Time:">结束时间：</label>
                 <input type="datetime-local" id="repop-end-time">
-                <label>Min Duration (ms):</label>
+                <label data-zh="最小持续时间 (ms)：" data-en="Min Duration (ms):">最小持续时间 (ms)：</label>
                 <input type="number" id="repop-min-duration" min="0">
-                <label>Max Duration (ms):</label>
+                <label data-zh="最大持续时间 (ms)：" data-en="Max Duration (ms):">最大持续时间 (ms)：</label>
                 <input type="number" id="repop-max-duration" min="0">
-                <button type="button" onclick="filterRepopTable()">Filter</button>
-                <button type="button" onclick="resetRepopFilter()">Reset</button>
+                <button type="button" onclick="filterRepopTable()" data-zh="筛选" data-en="Filter">筛选</button>
+                <button type="button" onclick="resetRepopFilter()" data-zh="重置" data-en="Reset">重置</button>
             </div>
             <div class="table-container">
             <table id="repop-table">
                 <tr>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Duration (ms)</th>
-                    <th>OP ID</th>
+                    <th data-zh="开始时间" data-en="Start Time">开始时间</th>
+                    <th data-zh="结束时间" data-en="End Time">结束时间</th>
+                    <th data-zh="持续时间 (ms)" data-en="Duration (ms)">持续时间 (ms)</th>
+                    <th data-zh="操作 ID" data-en="OP ID">操作 ID</th>
                 </tr>`
 
 	for _, event := range result.Events {
@@ -754,42 +847,42 @@ func generateRepopHTML(result types.AnalysisResult) string {
 // generateOSDOpHTML generates HTML for OSD Op analysis
 func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
 	html := `
-    <h2>OSD Operations Analysis</h2>
+    <h2 data-zh="OSD 操作分析" data-en="OSD Operations Analysis">OSD 操作分析</h2>
     <div class="layout">
         <div class="left-panel">
             <div class="query-principle">
-                <h3>Query Principle</h3>
-                <p>This analysis parses OSD (Object Storage Daemon) operations from the Ceph log. It identifies:</p>
+                <h3 data-zh="查询原理" data-en="Query Principle">查询原理</h3>
+                <p data-zh="此分析解析 Ceph 日志中的 OSD（对象存储守护进程）操作。它识别：" data-en="This analysis parses OSD (Object Storage Daemon) operations from the Ceph log. It identifies:">此分析解析 Ceph 日志中的 OSD（对象存储守护进程）操作。它识别：</p>
                 <ul>
-                    <li><strong>OSD operation events</strong>: Log lines containing "log_op_stats osd_op"</li>
+                    <li data-zh="<strong>OSD 操作事件</strong>：包含 "log_op_stats osd_op" 的日志行" data-en="<strong>OSD operation events</strong>: Log lines containing "log_op_stats osd_op""><strong>OSD 操作事件</strong>：包含 "log_op_stats osd_op" 的日志行</li>
                 </ul>
-                <p>For each OSD operation, it extracts:</p>
+                <p data-zh="对于每个 OSD 操作，它提取：" data-en="For each OSD operation, it extracts:">对于每个 OSD 操作，它提取：</p>
                 <ul>
-                    <li>Timestamp</li>
-                    <li>Operation ID</li>
-                    <li>PG ID</li>
-                    <li>Object name</li>
-                    <li>Operation type</li>
-                    <li>Range</li>
-                    <li>Input bytes</li>
-                    <li>Output bytes</li>
-                    <li>Latency (converted from seconds to milliseconds)</li>
+                    <li data-zh="时间戳" data-en="Timestamp">时间戳</li>
+                    <li data-zh="操作 ID" data-en="Operation ID">操作 ID</li>
+                    <li data-zh="PG ID" data-en="PG ID">PG ID</li>
+                    <li data-zh="对象名称" data-en="Object name">对象名称</li>
+                    <li data-zh="操作类型" data-en="Operation type">操作类型</li>
+                    <li data-zh="范围" data-en="Range">范围</li>
+                    <li data-zh="输入字节" data-en="Input bytes">输入字节</li>
+                    <li data-zh="输出字节" data-en="Output bytes">输出字节</li>
+                    <li data-zh="延迟（从秒转换为毫秒）" data-en="Latency (converted from seconds to milliseconds)">延迟（从秒转换为毫秒）</li>
                 </ul>
-                <p>It analyzes each operation individually, calculating latency and other metrics directly from the log entries.</p>
+                <p data-zh="它单独分析每个操作，直接从日志条目中计算延迟和其他指标。" data-en="It analyzes each operation individually, calculating latency and other metrics directly from the log entries.">它单独分析每个操作，直接从日志条目中计算延迟和其他指标。</p>
             </div>
             <div class="summary">
-                <h3>Summary</h3>
-                <p>Total operations: ` + strconv.Itoa(result.TotalOps) + `</p>`
+                <h3 data-zh="摘要" data-en="Summary">摘要</h3>
+                <p data-zh="总操作数：" data-en="Total operations: ">总操作数：` + strconv.Itoa(result.TotalOps) + `</p>`
 
 	if result.TotalOps > 0 {
 		avgLatency := result.TotalLatency / float64(result.TotalOps)
 		avgInBytes := result.TotalInBytes / result.TotalOps
 		avgOutBytes := result.TotalOutBytes / result.TotalOps
 		html += fmt.Sprintf(`
-                <p>Average latency: %.6f ms</p>
-                <p>Maximum latency: %.6f ms</p>
-                <p>Average input: %d bytes</p>
-                <p>Average output: %d bytes</p>`,
+                <p data-zh="平均延迟：" data-en="Average latency: ">平均延迟：%.6f ms</p>
+                <p data-zh="最大延迟：" data-en="Maximum latency: ">最大延迟：%.6f ms</p>
+                <p data-zh="平均输入：" data-en="Average input: ">平均输入：%d bytes</p>
+                <p data-zh="平均输出：" data-en="Average output: ">平均输出：%d bytes</p>`,
 			avgLatency,
 			result.MaxLatency,
 			avgInBytes,
@@ -798,7 +891,7 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
 
 	// Add latency distribution
 	html += `
-                <h4>Latency Distribution:</h4>`
+                <h4 data-zh="延迟分布：" data-en="Latency Distribution:">延迟分布：</h4>`
 	latencyRanges := []string{"0-1ms", "1-2ms", "2-3ms", "3-4ms", "4-5ms", "5-10ms", "10ms+"}
 	for _, rangeStr := range latencyRanges {
 		html += fmt.Sprintf(`
@@ -810,30 +903,30 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
         </div>
         <div class="right-panel">
             <div class="filter-form">
-                <h4>Filter Options:</h4>
-                <label>Start Time:</label>
+                <h4 data-zh="筛选选项：" data-en="Filter Options:">筛选选项：</h4>
+                <label data-zh="开始时间：" data-en="Start Time:">开始时间：</label>
                 <input type="datetime-local" id="osd-start-time">
-                <label>End Time:</label>
+                <label data-zh="结束时间：" data-en="End Time:">结束时间：</label>
                 <input type="datetime-local" id="osd-end-time">
-                <label>Min Latency (ms):</label>
+                <label data-zh="最小延迟 (ms)：" data-en="Min Latency (ms):">最小延迟 (ms)：</label>
                 <input type="number" id="osd-min-latency" min="0">
-                <label>Max Latency (ms):</label>
+                <label data-zh="最大延迟 (ms)：" data-en="Max Latency (ms):">最大延迟 (ms)：</label>
                 <input type="number" id="osd-max-latency" min="0">
-                <button type="button" onclick="filterOSDTable()">Filter</button>
-                <button type="button" onclick="resetOSDFilter()">Reset</button>
+                <button type="button" onclick="filterOSDTable()" data-zh="筛选" data-en="Filter">筛选</button>
+                <button type="button" onclick="resetOSDFilter()" data-zh="重置" data-en="Reset">重置</button>
             </div>
             <div class="table-container">
             <table id="osd-table">
                 <tr>
-                    <th>Timestamp</th>
-                    <th>OP ID</th>
-                    <th>PG ID</th>
-                    <th>Object</th>
-                    <th>Op Type</th>
-                    <th>Range</th>
-                    <th>In (bytes)</th>
-                    <th>Out (bytes)</th>
-                    <th>Latency (ms)</th>
+                    <th data-zh="时间戳" data-en="Timestamp">时间戳</th>
+                    <th data-zh="操作 ID" data-en="OP ID">操作 ID</th>
+                    <th data-zh="PG ID" data-en="PG ID">PG ID</th>
+                    <th data-zh="对象" data-en="Object">对象</th>
+                    <th data-zh="操作类型" data-en="Op Type">操作类型</th>
+                    <th data-zh="范围" data-en="Range">范围</th>
+                    <th data-zh="输入 (字节)" data-en="In (bytes)">输入 (字节)</th>
+                    <th data-zh="输出 (字节)" data-en="Out (bytes)">输出 (字节)</th>
+                    <th data-zh="延迟 (ms)" data-en="Latency (ms)">延迟 (ms)</th>
                 </tr>`
 
 	for _, event := range result.Events {
@@ -872,38 +965,38 @@ func generateOSDOpHTML(result types.OSDOpAnalysisResult) string {
 // generateTransactionHTML generates HTML for Transaction analysis
 func generateTransactionHTML(result types.TransactionAnalysisResult) string {
 	html := `
-    <h2>Transaction Analysis</h2>
+    <h2 data-zh="事务分析" data-en="Transaction Analysis">事务分析</h2>
     <div class="layout">
         <div class="left-panel">
             <div class="query-principle">
-                <h3>Query Principle</h3>
-                <p>This analysis parses transaction operations from the Ceph log. It identifies different stages of a transaction:</p>
+                <h3 data-zh="查询原理" data-en="Query Principle">查询原理</h3>
+                <p data-zh="此分析解析 Ceph 日志中的事务操作。它识别事务的不同阶段：" data-en="This analysis parses transaction operations from the Ceph log. It identifies different stages of a transaction:">此分析解析 Ceph 日志中的事务操作。它识别事务的不同阶段：</p>
                 <ul>
-                    <li><strong>Start events</strong>: Log lines containing "new_repop" with "rep_tid"</li>
-                    <li><strong>Issue events</strong>: Log lines containing "issue_repop" with "rep_tid"</li>
-                    <li><strong>Reply events</strong>: Log lines containing "do_repop_reply" with "tid"</li>
-                    <li><strong>Complete events</strong>: Log lines containing "repop_all_committed" with "repop tid"</li>
+                    <li data-zh="<strong>开始事件</strong>：包含 "new_repop" 和 "rep_tid" 的日志行" data-en="<strong>Start events</strong>: Log lines containing "new_repop" with "rep_tid""</li>
+                    <li data-zh="<strong>发出事件</strong>：包含 "issue_repop" 和 "rep_tid" 的日志行" data-en="<strong>Issue events</strong>: Log lines containing "issue_repop" with "rep_tid""</li>
+                    <li data-zh="<strong>回复事件</strong>：包含 "do_repop_reply" 和 "tid" 的日志行" data-en="<strong>Reply events</strong>: Log lines containing "do_repop_reply" with "tid""</li>
+                    <li data-zh="<strong>完成事件</strong>：包含 "repop_all_committed" 和 "repop tid" 的日志行" data-en="<strong>Complete events</strong>: Log lines containing "repop_all_committed" with "repop tid""</li>
                 </ul>
-                <p>For each transaction, it extracts:</p>
+                <p data-zh="对于每个事务，它提取：" data-en="For each transaction, it extracts:">对于每个事务，它提取：</p>
                 <ul>
-                    <li>Transaction ID (TID)</li>
-                    <li>Timestamps for each stage</li>
-                    <li>Operation ID</li>
-                    <li>Object name</li>
-                    <li>Range</li>
+                    <li data-zh="事务 ID (TID)" data-en="Transaction ID (TID)">事务 ID (TID)</li>
+                    <li data-zh="每个阶段的时间戳" data-en="Timestamps for each stage">每个阶段的时间戳</li>
+                    <li data-zh="操作 ID" data-en="Operation ID">操作 ID</li>
+                    <li data-zh="对象名称" data-en="Object name">对象名称</li>
+                    <li data-zh="范围" data-en="Range">范围</li>
                 </ul>
-                <p>It matches events using the transaction ID as a unique key, then calculates durations for each stage and the total transaction time.</p>
+                <p data-zh="它使用事务 ID 作为唯一键匹配事件，然后计算每个阶段的持续时间和总事务时间。" data-en="It matches events using the transaction ID as a unique key, then calculates durations for each stage and the total transaction time.">它使用事务 ID 作为唯一键匹配事件，然后计算每个阶段的持续时间和总事务时间。</p>
             </div>
             <div class="summary">
-                <h3>Summary</h3>
-                <p>Total transactions: ` + strconv.Itoa(result.TotalTransactions) + `</p>`
+                <h3 data-zh="摘要" data-en="Summary">摘要</h3>
+                <p data-zh="总事务数：" data-en="Total transactions: ">总事务数：` + strconv.Itoa(result.TotalTransactions) + `</p>`
 
 	if result.TotalTransactions > 0 {
 		averageDuration := result.TotalDuration / time.Duration(result.TotalTransactions)
 		html += fmt.Sprintf(`
-                <p>Average total duration: %.3f ms</p>
-                <p>Maximum total duration: %.3f ms</p>
-                <p>Minimum total duration: %.3f ms</p>`,
+                <p data-zh="平均总持续时间：" data-en="Average total duration: ">平均总持续时间：%.3f ms</p>
+                <p data-zh="最大总持续时间：" data-en="Maximum total duration: ">最大总持续时间：%.3f ms</p>
+                <p data-zh="最小总持续时间：" data-en="Minimum total duration: ">最小总持续时间：%.3f ms</p>`,
 			float64(averageDuration.Microseconds())/1000.0,
 			float64(result.MaxDuration.Microseconds())/1000.0,
 			float64(result.MinDuration.Microseconds())/1000.0)
@@ -911,7 +1004,7 @@ func generateTransactionHTML(result types.TransactionAnalysisResult) string {
 
 	// Add duration counts
 	html += `
-                <h4>Duration Counts:</h4>`
+                <h4 data-zh="持续时间计数：" data-en="Duration Counts:">持续时间计数：</h4>`
 
 	// Sort durations for consistent output
 	var durations []int
@@ -930,34 +1023,34 @@ func generateTransactionHTML(result types.TransactionAnalysisResult) string {
         </div>
         <div class="right-panel">
             <div class="filter-form">
-                <h4>Filter Options:</h4>
-                <label>Start Time:</label>
+                <h4 data-zh="筛选选项：" data-en="Filter Options:">筛选选项：</h4>
+                <label data-zh="开始时间：" data-en="Start Time:">开始时间：</label>
                 <input type="datetime-local" id="transaction-start-time">
-                <label>End Time:</label>
+                <label data-zh="结束时间：" data-en="End Time:">结束时间：</label>
                 <input type="datetime-local" id="transaction-end-time">
-                <label>Min Duration (ms):</label>
+                <label data-zh="最小持续时间 (ms)：" data-en="Min Duration (ms):">最小持续时间 (ms)：</label>
                 <input type="number" id="transaction-min-duration" min="0">
-                <label>Max Duration (ms):</label>
+                <label data-zh="最大持续时间 (ms)：" data-en="Max Duration (ms):">最大持续时间 (ms)：</label>
                 <input type="number" id="transaction-max-duration" min="0">
-                <button type="button" onclick="filterTransactionTable()">Filter</button>
-                <button type="button" onclick="resetTransactionFilter()">Reset</button>
+                <button type="button" onclick="filterTransactionTable()" data-zh="筛选" data-en="Filter">筛选</button>
+                <button type="button" onclick="resetTransactionFilter()" data-zh="重置" data-en="Reset">重置</button>
             </div>
             <div class="table-container">
             <table id="transaction-table">
                 <tr>
-                    <th>TID</th>
-                    <th>Start Time</th>
-                    <th>Issue Time</th>
-                    <th>1st Reply</th>
-                    <th>2nd Reply</th>
-                    <th>Complete Time</th>
-                    <th>Total (ms)</th>
-                    <th>Issue (ms)</th>
-                    <th>1st Reply (ms)</th>
-                    <th>2nd Reply (ms)</th>
-                    <th>OP ID</th>
-                    <th>Object</th>
-                    <th>Range</th>
+                    <th data-zh="TID" data-en="TID">TID</th>
+                    <th data-zh="开始时间" data-en="Start Time">开始时间</th>
+                    <th data-zh="发出时间" data-en="Issue Time">发出时间</th>
+                    <th data-zh="第一次回复" data-en="1st Reply">第一次回复</th>
+                    <th data-zh="第二次回复" data-en="2nd Reply">第二次回复</th>
+                    <th data-zh="完成时间" data-en="Complete Time">完成时间</th>
+                    <th data-zh="总耗时 (ms)" data-en="Total (ms)">总耗时 (ms)</th>
+                    <th data-zh="发出耗时 (ms)" data-en="Issue (ms)">发出耗时 (ms)</th>
+                    <th data-zh="第一次回复耗时 (ms)" data-en="1st Reply (ms)">第一次回复耗时 (ms)</th>
+                    <th data-zh="第二次回复耗时 (ms)" data-en="2nd Reply (ms)">第二次回复耗时 (ms)</th>
+                    <th data-zh="操作 ID" data-en="OP ID">操作 ID</th>
+                    <th data-zh="对象" data-en="Object">对象</th>
+                    <th data-zh="范围" data-en="Range">范围</th>
                 </tr>`
 
 	for _, event := range result.Events {
@@ -977,19 +1070,19 @@ func generateTransactionHTML(result types.TransactionAnalysisResult) string {
                     <td>%s</td>
                     <td>%s</td>
                 </tr>`,
-		event.TID,
-		event.StartTime.Format("2006-01-02 15:04:05.000"),
-		event.IssueTime.Format("2006-01-02 15:04:05.000"),
-		event.FirstReplyTime.Format("2006-01-02 15:04:05.000"),
-		event.SecondReplyTime.Format("2006-01-02 15:04:05.000"),
-		event.CompleteTime.Format("2006-01-02 15:04:05.000"),
-		float64(event.TotalDuration.Microseconds())/1000.0,
-		float64(event.IssueDuration.Microseconds())/1000.0,
-		float64(event.FirstReplyDuration.Microseconds())/1000.0,
-		float64(event.SecondReplyDuration.Microseconds())/1000.0,
-		event.OpID,
-		event.Object,
-		event.RangeStr)
+			event.TID,
+			event.StartTime.Format("2006-01-02 15:04:05.000"),
+			event.IssueTime.Format("2006-01-02 15:04:05.000"),
+			event.FirstReplyTime.Format("2006-01-02 15:04:05.000"),
+			event.SecondReplyTime.Format("2006-01-02 15:04:05.000"),
+			event.CompleteTime.Format("2006-01-02 15:04:05.000"),
+			float64(event.TotalDuration.Microseconds())/1000.0,
+			float64(event.IssueDuration.Microseconds())/1000.0,
+			float64(event.FirstReplyDuration.Microseconds())/1000.0,
+			float64(event.SecondReplyDuration.Microseconds())/1000.0,
+			event.OpID,
+			event.Object,
+			event.RangeStr)
 	}
 
 	html += `
