@@ -685,3 +685,122 @@ func ParseTransactionEvents(scanner *bufio.Scanner) ([]types.TransactionEvent, e
 
 	return events, nil
 }
+
+// ParseMetadataSyncEvents parses metadata sync events from log file
+func ParseMetadataSyncEvents(scanner *bufio.Scanner) ([]types.MetadataSyncEvent, error) {
+	var events []types.MetadataSyncEvent
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Check for metadata sync event
+		if strings.Contains(line, "_kv_sync_thread committed") {
+			// Extract timestamp
+			timestampStr := ""
+			parts := strings.Fields(line)
+			if len(parts) >= 3 {
+				timestampStr = parts[0] + " " + parts[1]
+			}
+
+			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
+			if err != nil {
+				continue
+			}
+
+			// Extract committed and cleaned values
+			committed := 0
+			cleaned := 0
+
+			for i, part := range parts {
+				if part == "committed" && i+1 < len(parts) {
+					committed, _ = strconv.Atoi(parts[i+1])
+				} else if part == "cleaned" && i+1 < len(parts) {
+					cleaned, _ = strconv.Atoi(parts[i+1])
+				}
+			}
+
+			// Extract duration
+			duration := time.Duration(0)
+			flushTime := time.Duration(0)
+			kvCommitTime := time.Duration(0)
+
+			// Find duration in the line
+			inIdx := -1
+			for i, part := range parts {
+				if part == "in" && i+1 < len(parts) {
+					inIdx = i
+					break
+				}
+			}
+
+			if inIdx != -1 && inIdx+1 < len(parts) {
+				// Extract duration string (e.g., "0.000328454s")
+				durationStr := parts[inIdx+1]
+				durationStr = strings.TrimSuffix(durationStr, "s")
+				durationSec, err := strconv.ParseFloat(durationStr, 64)
+				if err == nil {
+					duration = time.Duration(durationSec * float64(time.Second))
+				}
+
+				// Extract flush and kv commit times from parentheses
+				if inIdx+2 < len(parts) && strings.Contains(parts[inIdx+2], "(") {
+					// Collect all parts until we find the closing parenthesis
+					var parenthesesParts []string
+					for i := inIdx + 2; i < len(parts); i++ {
+						parenthesesParts = append(parenthesesParts, parts[i])
+						if strings.Contains(parts[i], ")") {
+							break
+						}
+					}
+
+					// Join the parts to get the full parentheses content
+					parenthesesContent := strings.Join(parenthesesParts, " ")
+					parenthesesContent = strings.TrimPrefix(parenthesesContent, "(")
+					parenthesesContent = strings.TrimSuffix(parenthesesContent, ")")
+
+					// Split into flush and kv commit parts
+					parts := strings.Split(parenthesesContent, " + ")
+					if len(parts) == 2 {
+						// Parse flush time
+						flushStr := parts[0]
+						// First remove " flush", then remove "s"
+						flushStr = strings.TrimSuffix(flushStr, " flush")
+						flushStr = strings.TrimSuffix(flushStr, "s")
+						// Remove any trailing whitespace
+						flushStr = strings.TrimSpace(flushStr)
+						flushSec, err := strconv.ParseFloat(flushStr, 64)
+						if err == nil {
+							flushTime = time.Duration(flushSec * float64(time.Second))
+						}
+
+						// Parse kv commit time
+						kvCommitStr := parts[1]
+						// First remove " kv commit", then remove "s"
+						kvCommitStr = strings.TrimSuffix(kvCommitStr, " kv commit")
+						kvCommitStr = strings.TrimSuffix(kvCommitStr, "s")
+						// Remove any trailing whitespace
+						kvCommitStr = strings.TrimSpace(kvCommitStr)
+						kvCommitSec, err := strconv.ParseFloat(kvCommitStr, 64)
+						if err == nil {
+							kvCommitTime = time.Duration(kvCommitSec * float64(time.Second))
+						}
+					}
+				}
+			}
+
+			// Create metadata sync event
+			event := types.MetadataSyncEvent{
+				Timestamp:    timestamp,
+				Committed:    committed,
+				Cleaned:      cleaned,
+				Duration:     duration,
+				FlushTime:    flushTime,
+				KVCommitTime: kvCommitTime,
+			}
+
+			events = append(events, event)
+		}
+	}
+
+	return events, nil
+}

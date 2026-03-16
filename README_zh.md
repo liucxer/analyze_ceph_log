@@ -1,14 +1,15 @@
 # Ceph 日志分析工具
 
-一个全面的 Ceph OSD 日志分析工具，支持分析 AIO 操作、OSD repop 操作、OSD 操作和事务操作。
+一个全面的 Ceph OSD 日志分析工具，支持分析 AIO 操作、OSD repop 操作、OSD 操作、事务操作和元数据同步操作。
 
 ## 功能特性
 
-- **多类型分析**：支持分析四种类型的操作：
+- **多类型分析**：支持分析五种类型的操作：
   - AIO (异步 I/O) 操作
   - OSD repop 操作
   - OSD 操作
   - 事务操作
+  - 元数据同步操作
 - **HTML 输出**：生成结构良好、视觉美观的 HTML 报告，带有标签页界面
 - **统计摘要**：为每种操作类型显示全面的统计信息
 - **筛选功能**：允许按时间范围和持续时间/延迟进行筛选
@@ -49,6 +50,7 @@ go run main.go <log_file> <analysis_type> [output.html]
 - `repop` - 分析 OSD repop 操作
 - `op` - 分析 OSD 操作
 - `transaction` - 分析事务操作
+- `metadata` - 分析元数据同步操作
 - `all` - 分析所有操作类型
 
 ### 示例
@@ -71,6 +73,11 @@ go run main.go <log_file> <analysis_type> [output.html]
 4. 分析事务操作：
    ```bash
    go run main.go /path/to/ceph-osd.log transaction transaction_analysis.html
+   ```
+
+5. 分析元数据同步操作：
+   ```bash
+   go run main.go /path/to/ceph-osd.log metadata metadata_analysis.html
    ```
 
 ## 输出

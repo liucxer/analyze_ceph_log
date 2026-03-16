@@ -94,3 +94,23 @@ type OSDOpAnalysisResult struct {
 	TotalOutBytes int
 	LatencyCounts map[string]int
 }
+
+// MetadataSyncEvent represents a metadata sync event
+type MetadataSyncEvent struct {
+	Timestamp time.Time
+	Committed int
+	Cleaned   int
+	Duration  time.Duration
+	FlushTime time.Duration
+	KVCommitTime time.Duration
+}
+
+// MetadataSyncAnalysisResult represents the result of metadata sync analysis
+type MetadataSyncAnalysisResult struct {
+	Events      []MetadataSyncEvent
+	TotalEvents int
+	TotalDuration time.Duration
+	MaxDuration  time.Duration
+	MinDuration  time.Duration
+	DurationCounts map[int]int
+}

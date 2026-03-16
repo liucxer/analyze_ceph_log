@@ -10,7 +10,7 @@ import (
 )
 
 // GenerateHTML generates HTML for all analysis types
-func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResult, osdOpResult types.OSDOpAnalysisResult, transactionResult types.TransactionAnalysisResult) string {
+func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResult, osdOpResult types.OSDOpAnalysisResult, transactionResult types.TransactionAnalysisResult, metadataResult types.MetadataSyncAnalysisResult) string {
 	htmlContent := `<!DOCTYPE html>
 <html>
 <head>
@@ -274,14 +274,15 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
         
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="openTab(event, 'aio')" data-zh="AIO 操作" data-en="AIO Operations">AIO 操作</button>
+            <button class="tab" onclick="openTab(event, 'aio')" data-zh="AIO 操作" data-en="AIO Operations">AIO 操作</button>
             <button class="tab" onclick="openTab(event, 'repop')" data-zh="OSD Repop 操作" data-en="OSD Repop Operations">OSD Repop 操作</button>
             <button class="tab" onclick="openTab(event, 'osd')" data-zh="OSD 操作" data-en="OSD Operations">OSD 操作</button>
-            <button class="tab" onclick="openTab(event, 'transaction')" data-zh="复制事务" data-en="Replication Transaction">复制事务</button>
+            <button class="tab active" onclick="openTab(event, 'transaction')" data-zh="复制事务" data-en="Replication Transaction">复制事务</button>
+            <button class="tab" onclick="openTab(event, 'metadata')" data-zh="元数据同步" data-en="Metadata Sync">元数据同步</button>
         </div>
         
         <!-- AIO Panel -->
-        <div id="aio" class="panel active">
+        <div id="aio" class="panel">
 `
 
 	// Add AIO analysis
@@ -311,7 +312,7 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
         </div>
         
         <!-- Transaction Panel -->
-        <div id="transaction" class="panel">
+        <div id="transaction" class="panel active">
 `
 
 	// Add Transaction analysis
@@ -320,302 +321,490 @@ func GenerateHTML(aioResult types.AnalysisResult, repopResult types.AnalysisResu
 	htmlContent += `
         </div>
         
+        <!-- Metadata Sync Panel -->
+        <div id="metadata" class="panel">
+`
+
+	// Add Metadata Sync analysis
+	htmlContent += generateMetadataSyncHTML(metadataResult)
+
+	htmlContent += `
+        </div>
+        
         <script>
             // Language switching functionality
             function switchLanguage(lang) {
-                // Update language buttons
-                document.getElementById('zh-btn').classList.remove('active');
-                document.getElementById('en-btn').classList.remove('active');
-                document.getElementById(lang + '-btn').classList.add('active');
-                
-                // Update page title
-                const pageTitle = document.getElementById('page-title');
-                if (lang === 'zh') {
-                    pageTitle.textContent = 'Ceph 日志分析';
-                } else {
-                    pageTitle.textContent = 'Ceph Log Analysis';
+                try {
+                    // Update language buttons
+                    var zhBtn = document.getElementById('zh-btn');
+                    var enBtn = document.getElementById('en-btn');
+                    if (zhBtn) zhBtn.classList.remove('active');
+                    if (enBtn) enBtn.classList.remove('active');
+                    var langBtn = document.getElementById(lang + '-btn');
+                    if (langBtn) langBtn.classList.add('active');
+                    
+                    // Update page title
+                    const pageTitle = document.getElementById('page-title');
+                    if (pageTitle) {
+                        if (lang === 'zh') {
+                            pageTitle.textContent = 'Ceph 日志分析';
+                        } else {
+                            pageTitle.textContent = 'Ceph Log Analysis';
+                        }
+                    }
+                    
+                    // Update tab labels
+                    const tabs = document.getElementsByClassName('tab');
+                    for (let i = 0; i < tabs.length; i++) {
+                        tabs[i].textContent = tabs[i].getAttribute('data-' + lang);
+                    }
+                    
+                    // Update AIO panel
+                    updateAIOPanel(lang);
+                    
+                    // Update Repop panel
+                    updateRepopPanel(lang);
+                    
+                    // Update OSD panel
+                    updateOSDPanel(lang);
+                    
+                    // Update Transaction panel
+                    updateTransactionPanel(lang);
+                    
+                    // Update Metadata panel
+                    updateMetadataPanel(lang);
+                } catch (e) {
+                    console.error("Error in switchLanguage:", e);
                 }
-                
-                // Update tab labels
-                const tabs = document.getElementsByClassName('tab');
-                for (let i = 0; i < tabs.length; i++) {
-                    tabs[i].textContent = tabs[i].getAttribute('data-' + lang);
-                }
-                
-                // Update AIO panel
-                updateAIOPanel(lang);
-                
-                // Update Repop panel
-                updateRepopPanel(lang);
-                
-                // Update OSD panel
-                updateOSDPanel(lang);
-                
-                // Update Transaction panel
-                updateTransactionPanel(lang);
             }
             
             function updateAIOPanel(lang) {
-                const panel = document.getElementById('aio');
-                const elements = panel.querySelectorAll('[data-zh]');
-                elements.forEach(el => {
-                    el.textContent = el.getAttribute('data-' + lang);
-                });
+                try {
+                    const panel = document.getElementById('aio');
+                    if (!panel) return;
+                    const elements = panel.querySelectorAll('[data-zh]');
+                    elements.forEach(el => {
+                        el.textContent = el.getAttribute('data-' + lang);
+                    });
+                } catch (e) {
+                    console.error("Error in updateAIOPanel:", e);
+                }
             }
             
             function updateRepopPanel(lang) {
-                const panel = document.getElementById('repop');
-                const elements = panel.querySelectorAll('[data-zh]');
-                elements.forEach(el => {
-                    el.textContent = el.getAttribute('data-' + lang);
-                });
+                try {
+                    const panel = document.getElementById('repop');
+                    if (!panel) return;
+                    const elements = panel.querySelectorAll('[data-zh]');
+                    elements.forEach(el => {
+                        el.textContent = el.getAttribute('data-' + lang);
+                    });
+                } catch (e) {
+                    console.error("Error in updateRepopPanel:", e);
+                }
             }
             
             function updateOSDPanel(lang) {
-                const panel = document.getElementById('osd');
-                const elements = panel.querySelectorAll('[data-zh]');
-                elements.forEach(el => {
-                    el.textContent = el.getAttribute('data-' + lang);
-                });
+                try {
+                    const panel = document.getElementById('osd');
+                    if (!panel) return;
+                    const elements = panel.querySelectorAll('[data-zh]');
+                    elements.forEach(el => {
+                        el.textContent = el.getAttribute('data-' + lang);
+                    });
+                } catch (e) {
+                    console.error("Error in updateOSDPanel:", e);
+                }
             }
             
             function updateTransactionPanel(lang) {
-                const panel = document.getElementById('transaction');
-                const elements = panel.querySelectorAll('[data-zh]');
-                elements.forEach(el => {
-                    el.textContent = el.getAttribute('data-' + lang);
-                });
+                try {
+                    const panel = document.getElementById('transaction');
+                    if (!panel) return;
+                    const elements = panel.querySelectorAll('[data-zh]');
+                    elements.forEach(el => {
+                        el.textContent = el.getAttribute('data-' + lang);
+                    });
+                } catch (e) {
+                    console.error("Error in updateTransactionPanel:", e);
+                }
+            }
+            
+            function updateMetadataPanel(lang) {
+                try {
+                    const panel = document.getElementById('metadata');
+                    if (!panel) return;
+                    const elements = panel.querySelectorAll('[data-zh]');
+                    elements.forEach(el => {
+                        el.textContent = el.getAttribute('data-' + lang);
+                    });
+                } catch (e) {
+                    console.error("Error in updateMetadataPanel:", e);
+                }
             }
             
             function openTab(evt, tabName) {
-                var i, tabcontent, tablinks;
-                
-                // Hide all tab content
-                tabcontent = document.getElementsByClassName("panel");
-                for (i = 0; i < tabcontent.length; i++) {
-                    tabcontent[i].classList.remove("active");
+                try {
+                    var i, tabcontent, tablinks;
+                    
+                    // Hide all tab content
+                    tabcontent = document.getElementsByClassName("panel");
+                    for (i = 0; i < tabcontent.length; i++) {
+                        tabcontent[i].classList.remove("active");
+                    }
+                    
+                    // Remove active class from all tabs
+                    tablinks = document.getElementsByClassName("tab");
+                    for (i = 0; i < tablinks.length; i++) {
+                        tablinks[i].classList.remove("active");
+                    }
+                    
+                    // Show the selected tab content and set active tab
+                    var tabContent = document.getElementById(tabName);
+                    if (tabContent) tabContent.classList.add("active");
+                    if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
+                } catch (e) {
+                    console.error("Error in openTab:", e);
                 }
-                
-                // Remove active class from all tabs
-                tablinks = document.getElementsByClassName("tab");
-                for (i = 0; i < tablinks.length; i++) {
-                    tablinks[i].classList.remove("active");
-                }
-                
-                // Show the selected tab content and set active tab
-                document.getElementById(tabName).classList.add("active");
-                evt.currentTarget.classList.add("active");
             }
             
             // AIO Table Filter
             function filterAIOTable() {
-                var startTime = document.getElementById("aio-start-time").value;
-                var endTime = document.getElementById("aio-end-time").value;
-                var minDuration = document.getElementById("aio-min-duration").value;
-                var maxDuration = document.getElementById("aio-max-duration").value;
-                var blockType = document.getElementById("aio-block-type").value;
-                var minLength = document.getElementById("aio-min-length").value;
-                var maxLength = document.getElementById("aio-max-length").value;
-                var table = document.getElementById("aio-table");
-                var tr = table.getElementsByTagName("tr");
-                
-                for (var i = 1; i < tr.length; i++) {
-                    var tdStartTime = tr[i].getElementsByTagName("td")[0].textContent;
-                    var tdEndTime = tr[i].getElementsByTagName("td")[1].textContent;
-                    var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[2].textContent);
-                    var tdLength = parseInt(tr[i].getElementsByTagName("td")[4].textContent);
-                    var tdBlockType = tr[i].getElementsByTagName("td")[5].textContent;
+                try {
+                    var startTime = document.getElementById("aio-start-time").value;
+                    var endTime = document.getElementById("aio-end-time").value;
+                    var minDuration = document.getElementById("aio-min-duration").value;
+                    var maxDuration = document.getElementById("aio-max-duration").value;
+                    var blockType = document.getElementById("aio-block-type").value;
+                    var minLength = document.getElementById("aio-min-length").value;
+                    var maxLength = document.getElementById("aio-max-length").value;
+                    var table = document.getElementById("aio-table");
+                    if (!table) return;
+                    var tr = table.getElementsByTagName("tr");
                     
-                    var match = true;
-                    
-                    if (startTime) {
-                        var startDate = new Date(startTime.replace('T', ' '));
-                        var rowStartDate = new Date(tdStartTime);
-                        if (rowStartDate < startDate) match = false;
+                    for (var i = 1; i < tr.length; i++) {
+                        var tdStartTime = tr[i].getElementsByTagName("td")[0].textContent;
+                        var tdEndTime = tr[i].getElementsByTagName("td")[1].textContent;
+                        var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[2].textContent);
+                        var tdLength = parseInt(tr[i].getElementsByTagName("td")[4].textContent);
+                        var tdBlockType = tr[i].getElementsByTagName("td")[5].textContent;
+                        
+                        var match = true;
+                        
+                        if (startTime) {
+                            var startDate = new Date(startTime.replace('T', ' '));
+                            var rowStartDate = new Date(tdStartTime);
+                            if (rowStartDate < startDate) match = false;
+                        }
+                        
+                        if (endTime) {
+                            var endDate = new Date(endTime.replace('T', ' '));
+                            var rowEndDate = new Date(tdEndTime);
+                            if (rowEndDate > endDate) match = false;
+                        }
+                        
+                        if (minDuration) {
+                            if (tdDuration < parseFloat(minDuration)) match = false;
+                        }
+                        
+                        if (maxDuration) {
+                            if (tdDuration > parseFloat(maxDuration)) match = false;
+                        }
+                        
+                        if (blockType) {
+                            if (tdBlockType !== blockType) match = false;
+                        }
+                        
+                        if (minLength) {
+                            if (tdLength < parseInt(minLength)) match = false;
+                        }
+                        
+                        if (maxLength) {
+                            if (tdLength > parseInt(maxLength)) match = false;
+                        }
+                        
+                        tr[i].style.display = match ? "" : "none";
                     }
-                    
-                    if (endTime) {
-                        var endDate = new Date(endTime.replace('T', ' '));
-                        var rowEndDate = new Date(tdEndTime);
-                        if (rowEndDate > endDate) match = false;
-                    }
-                    
-                    if (minDuration) {
-                        if (tdDuration < parseFloat(minDuration)) match = false;
-                    }
-                    
-                    if (maxDuration) {
-                        if (tdDuration > parseFloat(maxDuration)) match = false;
-                    }
-                    
-                    if (blockType) {
-                        if (tdBlockType !== blockType) match = false;
-                    }
-                    
-                    if (minLength) {
-                        if (tdLength < parseInt(minLength)) match = false;
-                    }
-                    
-                    if (maxLength) {
-                        if (tdLength > parseInt(maxLength)) match = false;
-                    }
-                    
-                    tr[i].style.display = match ? "" : "none";
+                } catch (e) {
+                    console.error("Error in filterAIOTable:", e);
                 }
             }
             
             function resetAIOFilter() {
-                document.getElementById("aio-start-time").value = "";
-                document.getElementById("aio-end-time").value = "";
-                document.getElementById("aio-min-duration").value = "";
-                document.getElementById("aio-max-duration").value = "";
-                document.getElementById("aio-block-type").value = "";
-                document.getElementById("aio-min-length").value = "";
-                document.getElementById("aio-max-length").value = "";
-                filterAIOTable();
+                try {
+                    var startTimeInput = document.getElementById("aio-start-time");
+                    var endTimeInput = document.getElementById("aio-end-time");
+                    var minDurationInput = document.getElementById("aio-min-duration");
+                    var maxDurationInput = document.getElementById("aio-max-duration");
+                    var blockTypeInput = document.getElementById("aio-block-type");
+                    var minLengthInput = document.getElementById("aio-min-length");
+                    var maxLengthInput = document.getElementById("aio-max-length");
+                    
+                    if (startTimeInput) startTimeInput.value = "";
+                    if (endTimeInput) endTimeInput.value = "";
+                    if (minDurationInput) minDurationInput.value = "";
+                    if (maxDurationInput) maxDurationInput.value = "";
+                    if (blockTypeInput) blockTypeInput.value = "";
+                    if (minLengthInput) minLengthInput.value = "";
+                    if (maxLengthInput) maxLengthInput.value = "";
+                    
+                    filterAIOTable();
+                } catch (e) {
+                    console.error("Error in resetAIOFilter:", e);
+                }
             }
             
             // Repop Table Filter
             function filterRepopTable() {
-                var startTime = document.getElementById("repop-start-time").value;
-                var endTime = document.getElementById("repop-end-time").value;
-                var minDuration = document.getElementById("repop-min-duration").value;
-                var maxDuration = document.getElementById("repop-max-duration").value;
-                var table = document.getElementById("repop-table");
-                var tr = table.getElementsByTagName("tr");
-                
-                for (var i = 1; i < tr.length; i++) {
-                    var tdStartTime = tr[i].getElementsByTagName("td")[0].textContent;
-                    var tdEndTime = tr[i].getElementsByTagName("td")[1].textContent;
-                    var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[2].textContent);
+                try {
+                    var startTime = document.getElementById("repop-start-time").value;
+                    var endTime = document.getElementById("repop-end-time").value;
+                    var minDuration = document.getElementById("repop-min-duration").value;
+                    var maxDuration = document.getElementById("repop-max-duration").value;
+                    var table = document.getElementById("repop-table");
+                    if (!table) return;
+                    var tr = table.getElementsByTagName("tr");
                     
-                    var match = true;
-                    
-                    if (startTime) {
-                        var startDate = new Date(startTime.replace('T', ' '));
-                        var rowStartDate = new Date(tdStartTime);
-                        if (rowStartDate < startDate) match = false;
+                    for (var i = 1; i < tr.length; i++) {
+                        var tdStartTime = tr[i].getElementsByTagName("td")[0].textContent;
+                        var tdEndTime = tr[i].getElementsByTagName("td")[1].textContent;
+                        var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[2].textContent);
+                        
+                        var match = true;
+                        
+                        if (startTime) {
+                            var startDate = new Date(startTime.replace('T', ' '));
+                            var rowStartDate = new Date(tdStartTime);
+                            if (rowStartDate < startDate) match = false;
+                        }
+                        
+                        if (endTime) {
+                            var endDate = new Date(endTime.replace('T', ' '));
+                            var rowEndDate = new Date(tdEndTime);
+                            if (rowEndDate > endDate) match = false;
+                        }
+                        
+                        if (minDuration) {
+                            if (tdDuration < parseFloat(minDuration)) match = false;
+                        }
+                        
+                        if (maxDuration) {
+                            if (tdDuration > parseFloat(maxDuration)) match = false;
+                        }
+                        
+                        tr[i].style.display = match ? "" : "none";
                     }
-                    
-                    if (endTime) {
-                        var endDate = new Date(endTime.replace('T', ' '));
-                        var rowEndDate = new Date(tdEndTime);
-                        if (rowEndDate > endDate) match = false;
-                    }
-                    
-                    if (minDuration) {
-                        if (tdDuration < parseFloat(minDuration)) match = false;
-                    }
-                    
-                    if (maxDuration) {
-                        if (tdDuration > parseFloat(maxDuration)) match = false;
-                    }
-                    
-                    tr[i].style.display = match ? "" : "none";
+                } catch (e) {
+                    console.error("Error in filterRepopTable:", e);
                 }
             }
             
             function resetRepopFilter() {
-                document.getElementById("repop-start-time").value = "";
-                document.getElementById("repop-end-time").value = "";
-                document.getElementById("repop-min-duration").value = "";
-                document.getElementById("repop-max-duration").value = "";
-                filterRepopTable();
+                try {
+                    var startTimeInput = document.getElementById("repop-start-time");
+                    var endTimeInput = document.getElementById("repop-end-time");
+                    var minDurationInput = document.getElementById("repop-min-duration");
+                    var maxDurationInput = document.getElementById("repop-max-duration");
+                    
+                    if (startTimeInput) startTimeInput.value = "";
+                    if (endTimeInput) endTimeInput.value = "";
+                    if (minDurationInput) minDurationInput.value = "";
+                    if (maxDurationInput) maxDurationInput.value = "";
+                    
+                    filterRepopTable();
+                } catch (e) {
+                    console.error("Error in resetRepopFilter:", e);
+                }
             }
             
             // OSD Table Filter
             function filterOSDTable() {
-                var startTime = document.getElementById("osd-start-time").value;
-                var endTime = document.getElementById("osd-end-time").value;
-                var minLatency = document.getElementById("osd-min-latency").value;
-                var maxLatency = document.getElementById("osd-max-latency").value;
-                var table = document.getElementById("osd-table");
-                var tr = table.getElementsByTagName("tr");
-                
-                for (var i = 1; i < tr.length; i++) {
-                    var tdTime = tr[i].getElementsByTagName("td")[0].textContent;
-                    var tdLatency = parseFloat(tr[i].getElementsByTagName("td")[8].textContent);
+                try {
+                    var startTime = document.getElementById("osd-start-time").value;
+                    var endTime = document.getElementById("osd-end-time").value;
+                    var minLatency = document.getElementById("osd-min-latency").value;
+                    var maxLatency = document.getElementById("osd-max-latency").value;
+                    var table = document.getElementById("osd-table");
+                    if (!table) return;
+                    var tr = table.getElementsByTagName("tr");
                     
-                    var match = true;
-                    
-                    if (startTime) {
-                        var startDate = new Date(startTime.replace('T', ' '));
-                        var rowDate = new Date(tdTime);
-                        if (rowDate < startDate) match = false;
+                    for (var i = 1; i < tr.length; i++) {
+                        var tdTime = tr[i].getElementsByTagName("td")[0].textContent;
+                        var tdLatency = parseFloat(tr[i].getElementsByTagName("td")[8].textContent);
+                        
+                        var match = true;
+                        
+                        if (startTime) {
+                            var startDate = new Date(startTime.replace('T', ' '));
+                            var rowDate = new Date(tdTime);
+                            if (rowDate < startDate) match = false;
+                        }
+                        
+                        if (endTime) {
+                            var endDate = new Date(endTime.replace('T', ' '));
+                            var rowDate = new Date(tdTime);
+                            if (rowDate > endDate) match = false;
+                        }
+                        
+                        if (minLatency) {
+                            if (tdLatency < parseFloat(minLatency)) match = false;
+                        }
+                        
+                        if (maxLatency) {
+                            if (tdLatency > parseFloat(maxLatency)) match = false;
+                        }
+                        
+                        tr[i].style.display = match ? "" : "none";
                     }
-                    
-                    if (endTime) {
-                        var endDate = new Date(endTime.replace('T', ' '));
-                        var rowDate = new Date(tdTime);
-                        if (rowDate > endDate) match = false;
-                    }
-                    
-                    if (minLatency) {
-                        if (tdLatency < parseFloat(minLatency)) match = false;
-                    }
-                    
-                    if (maxLatency) {
-                        if (tdLatency > parseFloat(maxLatency)) match = false;
-                    }
-                    
-                    tr[i].style.display = match ? "" : "none";
+                } catch (e) {
+                    console.error("Error in filterOSDTable:", e);
                 }
             }
             
             function resetOSDFilter() {
-                document.getElementById("osd-start-time").value = "";
-                document.getElementById("osd-end-time").value = "";
-                document.getElementById("osd-min-latency").value = "";
-                document.getElementById("osd-max-latency").value = "";
-                filterOSDTable();
+                try {
+                    var startTimeInput = document.getElementById("osd-start-time");
+                    var endTimeInput = document.getElementById("osd-end-time");
+                    var minLatencyInput = document.getElementById("osd-min-latency");
+                    var maxLatencyInput = document.getElementById("osd-max-latency");
+                    
+                    if (startTimeInput) startTimeInput.value = "";
+                    if (endTimeInput) endTimeInput.value = "";
+                    if (minLatencyInput) minLatencyInput.value = "";
+                    if (maxLatencyInput) maxLatencyInput.value = "";
+                    
+                    filterOSDTable();
+                } catch (e) {
+                    console.error("Error in resetOSDFilter:", e);
+                }
             }
             
             // Transaction Table Filter
             function filterTransactionTable() {
-                var startTime = document.getElementById("transaction-start-time").value;
-                var endTime = document.getElementById("transaction-end-time").value;
-                var minDuration = document.getElementById("transaction-min-duration").value;
-                var maxDuration = document.getElementById("transaction-max-duration").value;
-                var table = document.getElementById("transaction-table");
-                var tr = table.getElementsByTagName("tr");
-                
-                for (var i = 1; i < tr.length; i++) {
-                    var tdStartTime = tr[i].getElementsByTagName("td")[1].textContent;
-                    var tdEndTime = tr[i].getElementsByTagName("td")[5].textContent;
-                    var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[6].textContent);
+                try {
+                    var startTime = document.getElementById("transaction-start-time").value;
+                    var endTime = document.getElementById("transaction-end-time").value;
+                    var minDuration = document.getElementById("transaction-min-duration").value;
+                    var maxDuration = document.getElementById("transaction-max-duration").value;
+                    var table = document.getElementById("transaction-table");
+                    if (!table) return;
+                    var tr = table.getElementsByTagName("tr");
                     
-                    var match = true;
-                    
-                    if (startTime) {
-                        var startDate = new Date(startTime.replace('T', ' '));
-                        var rowStartDate = new Date(tdStartTime);
-                        if (rowStartDate < startDate) match = false;
+                    for (var i = 1; i < tr.length; i++) {
+                        var tds = tr[i].getElementsByTagName("td");
+                        if (tds.length < 7) continue; // Skip rows with insufficient cells
+                        
+                        var tdStartTime = tds[1].textContent;
+                        var tdEndTime = tds[5].textContent;
+                        var tdDuration = parseFloat(tds[6].textContent);
+                        
+                        var match = true;
+                        
+                        if (startTime) {
+                            var startDate = new Date(startTime.replace('T', ' '));
+                            var rowStartDate = new Date(tdStartTime);
+                            if (rowStartDate < startDate) match = false;
+                        }
+                        
+                        if (endTime) {
+                            var endDate = new Date(endTime.replace('T', ' '));
+                            var rowEndDate = new Date(tdEndTime);
+                            if (rowEndDate > endDate) match = false;
+                        }
+                        
+                        if (minDuration) {
+                            if (tdDuration < parseFloat(minDuration)) match = false;
+                        }
+                        
+                        if (maxDuration) {
+                            if (tdDuration > parseFloat(maxDuration)) match = false;
+                        }
+                        
+                        tr[i].style.display = match ? "" : "none";
                     }
-                    
-                    if (endTime) {
-                        var endDate = new Date(endTime.replace('T', ' '));
-                        var rowEndDate = new Date(tdEndTime);
-                        if (rowEndDate > endDate) match = false;
-                    }
-                    
-                    if (minDuration) {
-                        if (tdDuration < parseFloat(minDuration)) match = false;
-                    }
-                    
-                    if (maxDuration) {
-                        if (tdDuration > parseFloat(maxDuration)) match = false;
-                    }
-                    
-                    tr[i].style.display = match ? "" : "none";
+                } catch (e) {
+                    console.error("Error in filterTransactionTable:", e);
                 }
             }
             
             function resetTransactionFilter() {
-                document.getElementById("transaction-start-time").value = "";
-                document.getElementById("transaction-end-time").value = "";
-                document.getElementById("transaction-min-duration").value = "";
-                document.getElementById("transaction-max-duration").value = "";
-                filterTransactionTable();
+                try {
+                    var startTimeInput = document.getElementById("transaction-start-time");
+                    var endTimeInput = document.getElementById("transaction-end-time");
+                    var minDurationInput = document.getElementById("transaction-min-duration");
+                    var maxDurationInput = document.getElementById("transaction-max-duration");
+                    
+                    if (startTimeInput) startTimeInput.value = "";
+                    if (endTimeInput) endTimeInput.value = "";
+                    if (minDurationInput) minDurationInput.value = "";
+                    if (maxDurationInput) maxDurationInput.value = "";
+                    
+                    filterTransactionTable();
+                } catch (e) {
+                    console.error("Error in resetTransactionFilter:", e);
+                }
+            }
+            
+            // Metadata Sync Table Filter
+            function filterMetadataTable() {
+                try {
+                    var startTime = document.getElementById("metadata-start-time").value;
+                    var endTime = document.getElementById("metadata-end-time").value;
+                    var minDuration = document.getElementById("metadata-min-duration").value;
+                    var maxDuration = document.getElementById("metadata-max-duration").value;
+                    var table = document.getElementById("metadata-table");
+                    if (!table) return;
+                    var tr = table.getElementsByTagName("tr");
+                    
+                    for (var i = 1; i < tr.length; i++) {
+                        var tdTime = tr[i].getElementsByTagName("td")[0].textContent;
+                        var tdDuration = parseFloat(tr[i].getElementsByTagName("td")[3].textContent);
+                        
+                        var match = true;
+                        
+                        if (startTime) {
+                            var startDate = new Date(startTime.replace('T', ' '));
+                            var rowDate = new Date(tdTime);
+                            if (rowDate < startDate) match = false;
+                        }
+                        
+                        if (endTime) {
+                            var endDate = new Date(endTime.replace('T', ' '));
+                            var rowDate = new Date(tdTime);
+                            if (rowDate > endDate) match = false;
+                        }
+                        
+                        if (minDuration) {
+                            if (tdDuration < parseFloat(minDuration)) match = false;
+                        }
+                        
+                        if (maxDuration) {
+                            if (tdDuration > parseFloat(maxDuration)) match = false;
+                        }
+                        
+                        tr[i].style.display = match ? "" : "none";
+                    }
+                } catch (e) {
+                    console.error("Error in filterMetadataTable:", e);
+                }
+            }
+            
+            function resetMetadataFilter() {
+                try {
+                    var startTimeInput = document.getElementById("metadata-start-time");
+                    var endTimeInput = document.getElementById("metadata-end-time");
+                    var minDurationInput = document.getElementById("metadata-min-duration");
+                    var maxDurationInput = document.getElementById("metadata-max-duration");
+                    
+                    if (startTimeInput) startTimeInput.value = "";
+                    if (endTimeInput) endTimeInput.value = "";
+                    if (minDurationInput) minDurationInput.value = "";
+                    if (maxDurationInput) maxDurationInput.value = "";
+                    
+                    filterMetadataTable();
+                } catch (e) {
+                    console.error("Error in resetMetadataFilter:", e);
+                }
             }
         </script>
     </div>
@@ -1083,6 +1272,115 @@ func generateTransactionHTML(result types.TransactionAnalysisResult) string {
 			event.OpID,
 			event.Object,
 			event.RangeStr)
+	}
+
+	html += `
+            </table>
+            </div>
+        </div>
+    </div>`
+
+	return html
+}
+
+// generateMetadataSyncHTML generates HTML for Metadata Sync analysis
+func generateMetadataSyncHTML(result types.MetadataSyncAnalysisResult) string {
+	html := `
+    <h2 data-zh="元数据同步" data-en="Metadata Sync">元数据同步</h2>
+    <div class="layout">
+        <div class="left-panel">
+            <div class="query-principle">
+                <h3 data-zh="查询原理" data-en="Query Principle">查询原理</h3>
+                <p data-zh="此分析解析 Ceph 日志中的元数据同步操作。它识别：" data-en="This analysis parses metadata sync operations from the Ceph log. It identifies:">此分析解析 Ceph 日志中的元数据同步操作。它识别：</p>
+                <ul>
+                    <li data-zh="<strong>元数据同步事件</strong>：包含 "_kv_sync_thread committed" 的日志行" data-en="<strong>Metadata sync events</strong>: Log lines containing "_kv_sync_thread committed""</li>
+                </ul>
+                <p data-zh="对于每个元数据同步操作，它提取：" data-en="For each metadata sync operation, it extracts:">对于每个元数据同步操作，它提取：</p>
+                <ul>
+                    <li data-zh="时间戳" data-en="Timestamp">时间戳</li>
+                    <li data-zh="提交的操作数" data-en="Number of committed operations">提交的操作数</li>
+                    <li data-zh="清理的操作数" data-en="Number of cleaned operations">清理的操作数</li>
+                    <li data-zh="总持续时间" data-en="Total duration">总持续时间</li>
+                    <li data-zh="刷新时间" data-en="Flush time">刷新时间</li>
+                    <li data-zh="KV 提交时间" data-en="KV commit time">KV 提交时间</li>
+                </ul>
+                <p data-zh="它分析元数据同步线程的执行情况，包括同步操作的频率、耗时和详细分解。" data-en="It analyzes the execution of metadata sync threads, including the frequency, duration, and detailed breakdown of sync operations.">它分析元数据同步线程的执行情况，包括同步操作的频率、耗时和详细分解。</p>
+            </div>
+            <div class="summary">
+                <h3 data-zh="摘要" data-en="Summary">摘要</h3>
+                <p data-zh="总元数据同步操作数：" data-en="Total metadata sync operations: ">总元数据同步操作数：` + strconv.Itoa(result.TotalEvents) + `</p>`
+
+	if result.TotalEvents > 0 {
+		averageDuration := result.TotalDuration / time.Duration(result.TotalEvents)
+		html += fmt.Sprintf(`
+                <p data-zh="平均持续时间：" data-en="Average duration: ">平均持续时间：%.3f ms</p>
+                <p data-zh="最大持续时间：" data-en="Maximum duration: ">最大持续时间：%.3f ms</p>
+                <p data-zh="最小持续时间：" data-en="Minimum duration: ">最小持续时间：%.3f ms</p>`,
+			float64(averageDuration.Microseconds())/1000.0,
+			float64(result.MaxDuration.Microseconds())/1000.0,
+			float64(result.MinDuration.Microseconds())/1000.0)
+	}
+
+	// Add duration counts
+	html += `
+                <h4 data-zh="持续时间计数：" data-en="Duration Counts:">持续时间计数：</h4>`
+
+	// Sort durations for consistent output
+	var durations []int
+	for duration := range result.DurationCounts {
+		durations = append(durations, duration)
+	}
+	sort.Ints(durations)
+
+	for _, duration := range durations {
+		html += fmt.Sprintf(`
+                <p>%dms: %d operations</p>`, duration, result.DurationCounts[duration])
+	}
+
+	html += `
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="filter-form">
+                <h4 data-zh="筛选选项：" data-en="Filter Options:">筛选选项：</h4>
+                <label data-zh="开始时间：" data-en="Start Time:">开始时间：</label>
+                <input type="datetime-local" id="metadata-start-time">
+                <label data-zh="结束时间：" data-en="End Time:">结束时间：</label>
+                <input type="datetime-local" id="metadata-end-time">
+                <label data-zh="最小持续时间 (ms)：" data-en="Min Duration (ms):">最小持续时间 (ms)：</label>
+                <input type="number" id="metadata-min-duration" min="0">
+                <label data-zh="最大持续时间 (ms)：" data-en="Max Duration (ms):">最大持续时间 (ms)：</label>
+                <input type="number" id="metadata-max-duration" min="0">
+                <button type="button" onclick="filterMetadataTable()" data-zh="筛选" data-en="Filter">筛选</button>
+                <button type="button" onclick="resetMetadataFilter()" data-zh="重置" data-en="Reset">重置</button>
+            </div>
+            <div class="table-container">
+            <table id="metadata-table">
+                <tr>
+                    <th data-zh="时间戳" data-en="Timestamp">时间戳</th>
+                    <th data-zh="提交数" data-en="Committed">提交数</th>
+                    <th data-zh="清理数" data-en="Cleaned">清理数</th>
+                    <th data-zh="总耗时 (ms)" data-en="Total (ms)">总耗时 (ms)</th>
+                    <th data-zh="刷新耗时 (ms)" data-en="Flush (ms)">刷新耗时 (ms)</th>
+                    <th data-zh="KV 提交耗时 (ms)" data-en="KV Commit (ms)">KV 提交耗时 (ms)</th>
+                </tr>`
+
+	for _, event := range result.Events {
+		html += fmt.Sprintf(`
+                <tr>
+                    <td>%s</td>
+                    <td>%d</td>
+                    <td>%d</td>
+                    <td>%.3f</td>
+                    <td>%.6f</td>
+                    <td>%.3f</td>
+                </tr>`,
+			event.Timestamp.Format("2006-01-02 15:04:05.000"),
+			event.Committed,
+			event.Cleaned,
+			float64(event.Duration.Microseconds())/1000.0,
+			float64(event.FlushTime.Microseconds())/1000.0,
+			float64(event.KVCommitTime.Microseconds())/1000.0)
 	}
 
 	html += `

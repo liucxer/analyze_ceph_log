@@ -184,3 +184,42 @@ func AnalyzeTransactionEvents(events []types.TransactionEvent) types.Transaction
 		DurationCounts:    durationCounts,
 	}
 }
+
+// AnalyzeMetadataSyncEvents analyzes metadata sync events and returns statistics
+func AnalyzeMetadataSyncEvents(events []types.MetadataSyncEvent) types.MetadataSyncAnalysisResult {
+	totalEvents := len(events)
+	totalDuration := time.Duration(0)
+	maxDuration := time.Duration(0)
+	minDuration := time.Duration(1000000000) // Start with a large value
+
+	// Count requests by all durations present in data
+	durationCounts := make(map[int]int)
+
+	for _, event := range events {
+		totalDuration += event.Duration
+		if event.Duration > maxDuration {
+			maxDuration = event.Duration
+		}
+		if event.Duration < minDuration {
+			minDuration = event.Duration
+		}
+
+		// Categorize by duration
+		durationMs := int(float64(event.Duration.Microseconds()) / 1000.0)
+		durationCounts[durationMs]++
+	}
+
+	// Sort events by timestamp
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].Timestamp.Before(events[j].Timestamp)
+	})
+
+	return types.MetadataSyncAnalysisResult{
+		Events:         events,
+		TotalEvents:    totalEvents,
+		TotalDuration:  totalDuration,
+		MaxDuration:    maxDuration,
+		MinDuration:    minDuration,
+		DurationCounts: durationCounts,
+	}
+}

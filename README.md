@@ -1,14 +1,15 @@
 # Ceph Log Analysis Tool
 
-A comprehensive tool for analyzing Ceph OSD logs, including AIO operations, OSD repop operations, OSD operations, and transaction operations.
+A comprehensive tool for analyzing Ceph OSD logs, including AIO operations, OSD repop operations, OSD operations, transaction operations, and metadata sync operations.
 
 ## Features
 
-- **Multi-type Analysis**: Analyzes four types of operations:
+- **Multi-type Analysis**: Analyzes five types of operations:
   - AIO (Asynchronous I/O) operations
   - OSD repop operations
   - OSD operations
   - Transaction operations
+  - Metadata sync operations
 - **HTML Output**: Generates a well-structured, visually appealing HTML report with tabbed interface
 - **Summary Statistics**: Displays comprehensive statistics for each operation type
 - **Filtering Capabilities**: Allows filtering by time range and duration/latency
@@ -49,6 +50,7 @@ go run main.go <log_file> <analysis_type> [output.html]
 - `repop` - Analyze OSD repop operations
 - `op` - Analyze OSD operations
 - `transaction` - Analyze transaction operations
+- `metadata` - Analyze metadata sync operations
 - `all` - Analyze all operation types
 
 ### Examples
@@ -71,6 +73,11 @@ go run main.go <log_file> <analysis_type> [output.html]
 4. Analyze transaction operations:
    ```bash
    go run main.go /path/to/ceph-osd.log transaction transaction_analysis.html
+   ```
+
+5. Analyze metadata sync operations:
+   ```bash
+   go run main.go /path/to/ceph-osd.log metadata metadata_analysis.html
    ```
 
 ## Output

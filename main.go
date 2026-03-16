@@ -20,6 +20,7 @@ func main() {
 		fmt.Println("  repop - Analyze OSD repop operations")
 		fmt.Println("  op - Analyze OSD operations")
 		fmt.Println("  transaction - Analyze transaction operations")
+		fmt.Println("  metadata - Analyze metadata sync operations")
 		fmt.Println("  all - Analyze all operation types")
 		os.Exit(1)
 	}
@@ -51,6 +52,8 @@ func main() {
 		analyzeOSDOp(file, outputFile)
 	case "transaction":
 		analyzeTransaction(file, outputFile)
+	case "metadata":
+		analyzeMetadataSync(file, outputFile)
 	case "all":
 		analyzeAll(file, outputFile)
 	default:
@@ -81,7 +84,7 @@ func analyzeAIO(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeAIOEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(result, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{})
+	htmlContent := html.GenerateHTML(result, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -111,7 +114,7 @@ func analyzeRepop(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeRepopEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, result, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{})
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, result, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -141,7 +144,7 @@ func analyzeOSDOp(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeOSDOpEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, result, types.TransactionAnalysisResult{})
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, result, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -171,7 +174,37 @@ func analyzeTransaction(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeTransactionEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, result)
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, result, types.MetadataSyncAnalysisResult{})
+
+	// Write to file
+	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
+	if err != nil {
+		fmt.Printf("Error writing HTML file: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// analyzeMetadataSync analyzes metadata sync operations
+func analyzeMetadataSync(file *os.File, outputFile string) {
+	// Reset file pointer
+	file.Seek(0, 0)
+
+	// Parse Metadata Sync events
+	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	events, err := log.ParseMetadataSyncEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Metadata Sync events: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Analyze events
+	result := analyzer.AnalyzeMetadataSyncEvents(events)
+
+	// Generate HTML
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, result)
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -231,14 +264,27 @@ func analyzeAll(file *os.File, outputFile string) {
 		os.Exit(1)
 	}
 
+	// Parse Metadata Sync events
+	file.Seek(0, 0)
+	scanner = bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf = make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	metadataSyncEvents, err := log.ParseMetadataSyncEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Metadata Sync events: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Analyze events
 	aioResult := analyzer.AnalyzeAIOEvents(aioEvents)
 	repopResult := analyzer.AnalyzeRepopEvents(repopEvents)
 	osdOpResult := analyzer.AnalyzeOSDOpEvents(osdOpEvents)
 	transactionResult := analyzer.AnalyzeTransactionEvents(transactionEvents)
+	metadataSyncResult := analyzer.AnalyzeMetadataSyncEvents(metadataSyncEvents)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(aioResult, repopResult, osdOpResult, transactionResult)
+	htmlContent := html.GenerateHTML(aioResult, repopResult, osdOpResult, transactionResult, metadataSyncResult)
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
