@@ -23,17 +23,17 @@ type RepopEvent struct {
 
 // OSDOpEvent represents an OSD operation event
 type OSDOpEvent struct {
-	Timestamp         time.Time
-	OpID              string
-	PgID              string
-	Object            string
-	OpType            string
-	RangeStr          string
-	InBytes           int
-	OutBytes          int
-	Latency           float64 // in milliseconds
-	FirstRepopReply   float64 // in milliseconds
-	SecondRepopReply  float64 // in milliseconds
+	Timestamp        time.Time
+	OpID             string
+	PgID             string
+	Object           string
+	OpType           string
+	RangeStr         string
+	InBytes          int
+	OutBytes         int
+	Latency          float64 // in milliseconds
+	FirstRepopReply  float64 // in milliseconds
+	SecondRepopReply float64 // in milliseconds
 }
 
 // Event represents a generic event with start/end times and duration
@@ -49,29 +49,29 @@ type Event struct {
 
 // AnalysisResult represents the result of an analysis
 type AnalysisResult struct {
-	Events      []Event
-	TotalEvents int
-	TotalDuration time.Duration
-	MaxDuration  time.Duration
-	MinDuration  time.Duration
+	Events         []Event
+	TotalEvents    int
+	TotalDuration  time.Duration
+	MaxDuration    time.Duration
+	MinDuration    time.Duration
 	DurationCounts map[int]int
 }
 
 // TransactionEvent represents a transaction event with different stages
 type TransactionEvent struct {
-	TID              string
-	StartTime        time.Time
-	IssueTime        time.Time
-	FirstReplyTime   time.Time
-	SecondReplyTime  time.Time
-	CompleteTime     time.Time
-	TotalDuration    time.Duration
-	IssueDuration    time.Duration
-	FirstReplyDuration time.Duration
+	TID                 string
+	StartTime           time.Time
+	IssueTime           time.Time
+	FirstReplyTime      time.Time
+	SecondReplyTime     time.Time
+	CompleteTime        time.Time
+	TotalDuration       time.Duration
+	IssueDuration       time.Duration
+	FirstReplyDuration  time.Duration
 	SecondReplyDuration time.Duration
-	OpID             string
-	Object           string
-	RangeStr         string
+	OpID                string
+	Object              string
+	RangeStr            string
 }
 
 // TransactionAnalysisResult represents the result of transaction analysis
@@ -86,31 +86,77 @@ type TransactionAnalysisResult struct {
 
 // OSDOpAnalysisResult represents the result of OSD operation analysis
 type OSDOpAnalysisResult struct {
-	Events       []OSDOpEvent
-	TotalOps     int
-	TotalLatency float64
-	MaxLatency   float64
-	TotalInBytes int
+	Events        []OSDOpEvent
+	TotalOps      int
+	TotalLatency  float64
+	MaxLatency    float64
+	TotalInBytes  int
 	TotalOutBytes int
 	LatencyCounts map[string]int
 }
 
 // MetadataSyncEvent represents a metadata sync event
 type MetadataSyncEvent struct {
-	Timestamp time.Time
-	Committed int
-	Cleaned   int
-	Duration  time.Duration
-	FlushTime time.Duration
+	Timestamp    time.Time
+	Committed    int
+	Cleaned      int
+	Duration     time.Duration
+	FlushTime    time.Duration
 	KVCommitTime time.Duration
 }
 
 // MetadataSyncAnalysisResult represents the result of metadata sync analysis
 type MetadataSyncAnalysisResult struct {
-	Events      []MetadataSyncEvent
-	TotalEvents int
-	TotalDuration time.Duration
-	MaxDuration  time.Duration
-	MinDuration  time.Duration
+	Events         []MetadataSyncEvent
+	TotalEvents    int
+	TotalDuration  time.Duration
+	MaxDuration    time.Duration
+	MinDuration    time.Duration
 	DurationCounts map[int]int
+}
+
+// ClientOpEvent represents a client operation event with replication details
+type ClientOpEvent struct {
+	Timestamp           time.Time
+	ClientID            string
+	OpID                string
+	PGID                string
+	Object              string
+	DataSize            int
+	TotalLatency        float64 // in milliseconds
+	FirstReplyLatency   float64 // in milliseconds
+	SecondReplyLatency  float64 // in milliseconds
+	LocalProcessingTime float64 // in milliseconds
+}
+
+// ClientOpAnalysisResult represents the result of client operation analysis
+type ClientOpAnalysisResult struct {
+	Events        []ClientOpEvent
+	TotalOps      int
+	TotalLatency  float64
+	MaxLatency    float64
+	TotalDataSize int
+	LatencyCounts map[string]int
+}
+
+// DequeueEvent represents a dequeue operation event
+type DequeueEvent struct {
+	Timestamp      time.Time
+	OpType         string
+	ClientID       string
+	OpID           string
+	PGID           string
+	DequeueLatency int // in microseconds
+	Priority       int
+	Cost           int
+}
+
+// DequeueAnalysisResult represents the result of dequeue operation analysis
+type DequeueAnalysisResult struct {
+	Events        []DequeueEvent
+	TotalOps      int
+	TotalLatency  int // in microseconds
+	MaxLatency    int // in microseconds
+	MinLatency    int // in microseconds
+	LatencyCounts map[string]int
 }

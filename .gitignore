@@ -1,2 +1,3 @@
 *.html
 analyze_ceph
+analyze_ceph_log

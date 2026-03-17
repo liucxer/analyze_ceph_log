@@ -4,12 +4,16 @@ A comprehensive tool for analyzing Ceph OSD logs, including AIO operations, OSD 
 
 ## Features
 
-- **Multi-type Analysis**: Analyzes five types of operations:
+- **Multi-type Analysis**: Analyzes nine types of operations:
   - AIO (Asynchronous I/O) operations
   - OSD repop operations
   - OSD operations
   - Transaction operations
   - Metadata sync operations
+  - Client operations
+  - Client operation details
+  - Dequeue operations
+  - OSD op events
 - **HTML Output**: Generates a well-structured, visually appealing HTML report with tabbed interface
 - **Summary Statistics**: Displays comprehensive statistics for each operation type
 - **Filtering Capabilities**: Allows filtering by time range and duration/latency
@@ -51,6 +55,8 @@ go run main.go <log_file> <analysis_type> [output.html]
 - `op` - Analyze OSD operations
 - `transaction` - Analyze transaction operations
 - `metadata` - Analyze metadata sync operations
+- `client` - Analyze client operations
+- `dequeue` - Analyze dequeue operations
 - `all` - Analyze all operation types
 
 ### Examples
@@ -80,16 +86,36 @@ go run main.go <log_file> <analysis_type> [output.html]
    go run main.go /path/to/ceph-osd.log metadata metadata_analysis.html
    ```
 
+6. Analyze client operations:
+   ```bash
+   go run main.go /path/to/ceph-osd.log client client_analysis.html
+   ```
+
+7. Analyze dequeue operations:
+   ```bash
+   go run main.go /path/to/ceph-osd.log dequeue dequeue_analysis.html
+   ```
+
 ## Output
 
 The tool generates an HTML report with:
 
-- **Tabbed Interface**: Separate tabs for each operation type
+- **Tabbed Interface**: Separate tabs for each operation type, including:
+  - OSD op events
+  - OSD repop events
+  - Dequeue op events
+  - AIO events
+  - Metadata sync
+  - OSD events
+  - Replication transaction
+  - Client events
+  - Client event detail
 - **Query Principle Section**: Clear explanation of how each operation type is parsed and analyzed
 - **Summary Section**: Key statistics at the top of each tab
 - **Filter Form**: Time range and duration/latency filters for each table
 - **Data Table**: Detailed list of operations with timestamps and durations
 - **Duration Distribution**: Breakdown of operations by duration/latency ranges
+- **Pagination**: Pagination for all data tables with default 100 items per page
 
 ## Project Structure
 
@@ -100,9 +126,11 @@ analyze_ceph_log/
 ├── .gitignore            # Git ignore file
 ├── README.md             # English README
 ├── README_zh.md          # Chinese README
+├── js/                   # JavaScript files for frontend functionality
 └── pkg/                  # Package directory
     ├── analyzer/         # Analysis logic
     ├── html/             # HTML generation
+    │   └── panels/       # Panel-specific HTML generation
     ├── log/              # Log parsing
     └── types/            # Type definitions
 ```

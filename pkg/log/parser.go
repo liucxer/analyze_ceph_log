@@ -173,8 +173,8 @@ func ParseAIOEvents(scanner *bufio.Scanner) ([]types.Event, error) {
 
 // ParseRepopEvents parses OSD repop events from log file
 func ParseRepopEvents(scanner *bufio.Scanner) ([]types.Event, error) {
-	dequeueRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* dequeue_op .* osd_repop\(([\s\S]+?)\)`)
-	commitRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* repop_commit on op osd_repop\(([\s\S]+?)\)`)
+	enqueueRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* enqueue_op .* osd_repop\(([\s\S]+?)\)(?: v\d+)?`)
+	commitRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* osd_repop\(([\s\S]+?)\)(?: v\d+)?, sending commit to`)
 
 	// Map to store all events by op ID
 	eventsMap := make(map[string]struct {
@@ -187,20 +187,16 @@ func ParseRepopEvents(scanner *bufio.Scanner) ([]types.Event, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if dequeueMatches := dequeueRegex.FindStringSubmatch(line); len(dequeueMatches) == 3 {
-			timestampStr := dequeueMatches[1]
-			opInfo := dequeueMatches[2]
+		if enqueueMatches := enqueueRegex.FindStringSubmatch(line); len(enqueueMatches) == 3 {
+			timestampStr := enqueueMatches[1]
+			opInfo := enqueueMatches[2]
 
-			// Use first three parts as op ID
-			parts := make([]string, 0)
-			for i, part := range strings.Fields(opInfo) {
-				if i < 3 {
-					parts = append(parts, part)
-				} else {
-					break
-				}
+			// Extract client ID and op ID (first part)
+			parts := strings.Fields(opInfo)
+			if len(parts) == 0 {
+				continue
 			}
-			opID := strings.Join(parts, " ")
+			opID := parts[0]
 
 			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
 			if err != nil {
@@ -221,16 +217,12 @@ func ParseRepopEvents(scanner *bufio.Scanner) ([]types.Event, error) {
 			timestampStr := commitMatches[1]
 			opInfo := commitMatches[2]
 
-			// Use first three parts as op ID
-			parts := make([]string, 0)
-			for i, part := range strings.Fields(opInfo) {
-				if i < 3 {
-					parts = append(parts, part)
-				} else {
-					break
-				}
+			// Extract client ID and op ID (first part)
+			parts := strings.Fields(opInfo)
+			if len(parts) == 0 {
+				continue
 			}
-			opID := strings.Join(parts, " ")
+			opID := parts[0]
 
 			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
 			if err != nil {
@@ -240,6 +232,96 @@ func ParseRepopEvents(scanner *bufio.Scanner) ([]types.Event, error) {
 			if event, ok := eventsMap[opID]; ok {
 				duration := timestamp.Sub(event.startTime)
 				eventsMap[opID] = struct {
+					startTime time.Time
+					endTime   time.Time
+					duration  time.Duration
+					opID      string
+				}{
+					startTime: event.startTime,
+					endTime:   timestamp,
+					duration:  duration,
+					opID:      event.opID,
+				}
+			}
+		}
+	}
+
+	// Convert map to slice for sorting
+	var events []types.Event
+	for _, event := range eventsMap {
+		if event.duration >= 0 {
+			events = append(events, types.Event{
+				StartTime: event.startTime,
+				EndTime:   event.endTime,
+				Duration:  event.duration,
+				OpID:      event.opID,
+			})
+		}
+	}
+
+	return events, nil
+}
+
+// ParseOSDOpEvents parses OSD op events from log file
+func ParseOSDOpEventsV2(scanner *bufio.Scanner) ([]types.Event, error) {
+	enqueueRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* enqueue_op .* osd_op\(([\s\S]+?)\)(?: v\d+)?`)
+	replyRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) .* sending reply on osd_op\(([\s\S]+?)\)(?: v\d+)?`)
+
+	// Map to store all events by op ID
+	eventsMap := make(map[string]struct {
+		startTime time.Time
+		endTime   time.Time
+		duration  time.Duration
+		opID      string
+	})
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if enqueueMatches := enqueueRegex.FindStringSubmatch(line); len(enqueueMatches) == 3 {
+			timestampStr := enqueueMatches[1]
+			opInfo := enqueueMatches[2]
+
+			// Extract client ID and op ID for osd_op
+			clientOp := ""
+			parts := strings.Fields(opInfo)
+			if len(parts) > 0 {
+				clientOp = parts[0]
+			}
+
+			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
+			if err != nil {
+				continue
+			}
+
+			eventsMap[clientOp] = struct {
+				startTime time.Time
+				endTime   time.Time
+				duration  time.Duration
+				opID      string
+			}{
+				startTime: timestamp,
+				opID:      clientOp,
+			}
+		} else if replyMatches := replyRegex.FindStringSubmatch(line); len(replyMatches) == 3 {
+			timestampStr := replyMatches[1]
+			opInfo := replyMatches[2]
+
+			// Extract client ID and op ID for osd_op
+			clientOp := ""
+			parts := strings.Fields(opInfo)
+			if len(parts) > 0 {
+				clientOp = parts[0]
+			}
+
+			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
+			if err != nil {
+				continue
+			}
+
+			if event, ok := eventsMap[clientOp]; ok {
+				duration := timestamp.Sub(event.startTime)
+				eventsMap[clientOp] = struct {
 					startTime time.Time
 					endTime   time.Time
 					duration  time.Duration
@@ -796,6 +878,385 @@ func ParseMetadataSyncEvents(scanner *bufio.Scanner) ([]types.MetadataSyncEvent,
 				Duration:     duration,
 				FlushTime:    flushTime,
 				KVCommitTime: kvCommitTime,
+			}
+
+			events = append(events, event)
+		}
+	}
+
+	return events, nil
+}
+
+// ParseClientOpEvents parses client operation events from log file
+func ParseClientOpEvents(scanner *bufio.Scanner) ([]types.ClientOpEvent, error) {
+	// Map to store client operations by op ID
+	eventsMap := make(map[string]types.ClientOpEvent)
+	// Map to store repop reply times by op ID
+	repopReplyMap := make(map[string][]time.Time)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Check for osd_op event (client operation)
+		if strings.Contains(line, "osd_op(client.") {
+			// Extract timestamp
+			timestampStr := ""
+			parts := strings.Fields(line)
+			if len(parts) >= 3 {
+				timestampStr = parts[0] + " " + parts[1]
+			}
+
+			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
+			if err != nil {
+				continue
+			}
+
+			// Extract client ID and op ID
+			clientID := ""
+			opID := ""
+			clientOp := ""
+			pgID := ""
+			object := ""
+			dataSize := 0
+
+			// Find osd_op section
+			opStart := strings.Index(line, "osd_op(")
+			if opStart != -1 {
+				opEnd := strings.Index(line[opStart:], ")")
+				if opEnd != -1 {
+					opStr := line[opStart+7 : opStart+opEnd] // Skip "osd_op("
+					opParts := strings.Fields(opStr)
+					if len(opParts) >= 3 {
+						// Extract client ID and op ID
+						clientOp = opParts[0]
+						clientParts := strings.Split(clientOp, ":")
+						if len(clientParts) == 2 {
+							clientID = clientParts[0]
+							opID = clientParts[1]
+						}
+						pgID = opParts[1]
+						object = opParts[2]
+
+						// Extract data size from range string
+						for _, part := range opParts {
+							if strings.Contains(part, "~") {
+								rangeParts := strings.Split(part, "~")
+								if len(rangeParts) == 2 {
+									sizeStr := rangeParts[1]
+									size, err := strconv.Atoi(sizeStr)
+									if err == nil {
+										dataSize = size
+									}
+								}
+								break
+							}
+						}
+					}
+				}
+			}
+
+			if clientID != "" && opID != "" && clientOp != "" {
+				eventsMap[clientOp] = types.ClientOpEvent{
+					Timestamp: timestamp,
+					ClientID:  clientID,
+					OpID:      opID,
+					PGID:      pgID,
+					Object:    object,
+					DataSize:  dataSize,
+				}
+			}
+
+		} else if strings.Contains(line, "osd_repop_reply(client.") {
+			// Extract timestamp
+			timestampStr := ""
+			parts := strings.Fields(line)
+			if len(parts) >= 3 {
+				timestampStr = parts[0] + " " + parts[1]
+			}
+
+			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
+			if err != nil {
+				continue
+			}
+
+			// Extract client ID and op ID
+			clientOp := ""
+			replyStart := strings.Index(line, "osd_repop_reply(")
+			if replyStart != -1 {
+				replyEnd := strings.Index(line[replyStart:], ")")
+				if replyEnd != -1 {
+					replyStr := line[replyStart+17 : replyStart+replyEnd] // Skip "osd_repop_reply("
+					replyParts := strings.Fields(replyStr)
+					if len(replyParts) >= 1 {
+						clientOp = replyParts[0]
+					}
+				}
+			}
+
+			if clientOp != "" {
+				repopReplyMap[clientOp] = append(repopReplyMap[clientOp], timestamp)
+			}
+
+		} else if strings.Contains(line, "log_op_stats osd_op(client.") {
+			// Extract client ID and op ID
+			clientOp := ""
+			latency := 0.0
+
+			// Find osd_op section
+			opStart := strings.Index(line, "osd_op(")
+			if opStart != -1 {
+				opEnd := strings.Index(line[opStart:], ")")
+				if opEnd != -1 {
+					opStr := line[opStart+7 : opStart+opEnd] // Skip "osd_op("
+					opParts := strings.Fields(opStr)
+					if len(opParts) >= 1 {
+						clientOp = opParts[0]
+					}
+				}
+			}
+
+			// Extract latency
+			parts := strings.Fields(line)
+			for i, part := range parts {
+				if part == "lat" && i+1 < len(parts) {
+					latencyStr := parts[i+1]
+					latency, _ = strconv.ParseFloat(latencyStr, 64)
+					// Convert to milliseconds
+					latency *= 1000.0
+					break
+				}
+			}
+
+			if clientOp != "" {
+				if event, ok := eventsMap[clientOp]; ok {
+					event.TotalLatency = latency
+					eventsMap[clientOp] = event
+				}
+			}
+		}
+	}
+
+	// Process repop reply times
+	for clientOp, event := range eventsMap {
+		if replyTimes, ok := repopReplyMap[clientOp]; ok {
+			// Sort reply times
+			sort.Slice(replyTimes, func(i, j int) bool {
+				return replyTimes[i].Before(replyTimes[j])
+			})
+
+			// Calculate reply latencies
+			if len(replyTimes) >= 1 {
+				firstReplyLatency := math.Abs(float64(replyTimes[0].Sub(event.Timestamp).Milliseconds()))
+				event.FirstReplyLatency = firstReplyLatency
+			}
+
+			if len(replyTimes) >= 2 {
+				secondReplyLatency := math.Abs(float64(replyTimes[1].Sub(replyTimes[0]).Milliseconds()))
+				event.SecondReplyLatency = secondReplyLatency
+			}
+
+			// Calculate local processing time
+			if event.TotalLatency > 0 && event.FirstReplyLatency > 0 && event.SecondReplyLatency > 0 {
+				event.LocalProcessingTime = event.TotalLatency - (event.FirstReplyLatency + event.SecondReplyLatency)
+				if event.LocalProcessingTime < 0 {
+					event.LocalProcessingTime = 0
+				}
+			}
+
+			eventsMap[clientOp] = event
+		}
+	}
+
+	// Convert map to slice
+	var events []types.ClientOpEvent
+	for _, event := range eventsMap {
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+// ParseDequeueEvents parses dequeue operation events from log file
+func ParseDequeueEvents(scanner *bufio.Scanner) ([]types.DequeueEvent, error) {
+	var events []types.DequeueEvent
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Check for dequeue operation event
+		if strings.Contains(line, "latency") && strings.Contains(line, "dequeue_op") {
+			// Extract timestamp
+			timestampStr := ""
+			parts := strings.Fields(line)
+			if len(parts) >= 3 {
+				timestampStr = parts[0] + " " + parts[1]
+			}
+
+			timestamp, err := time.Parse("2006-01-02 15:04:05.000", timestampStr)
+			if err != nil {
+				continue
+			}
+
+			// Extract op type
+			opType := ""
+			if strings.Contains(line, "osd_op(") {
+				opType = "osd_op"
+			} else if strings.Contains(line, "osd_repop(") {
+				opType = "osd_repop"
+			} else if strings.Contains(line, "osd_repop_reply(") {
+				opType = "osd_repop_reply"
+			} else if strings.Contains(line, "osd_subop(") {
+				opType = "osd_subop"
+			} else if strings.Contains(line, "pg_update_log_missing(") {
+				opType = "pg_update_log_missing"
+			}
+
+			// Extract client ID and op ID
+			clientID := ""
+			opID := ""
+			pgID := ""
+
+			// Extract client ID and op ID from osd_op
+			if strings.Contains(line, "osd_op(") {
+				opStart := strings.Index(line, "osd_op(")
+				opEnd := strings.Index(line[opStart:], ")")
+				if opEnd != -1 {
+					opStr := line[opStart+7 : opStart+opEnd] // Skip "osd_op("
+					opParts := strings.Fields(opStr)
+					if len(opParts) >= 2 {
+						clientOp := opParts[0]
+						// Remove any leading parentheses
+						clientOp = strings.TrimPrefix(clientOp, "(")
+						// Remove any trailing parentheses
+						clientOp = strings.TrimSuffix(clientOp, ")")
+						clientParts := strings.Split(clientOp, ":")
+						if len(clientParts) == 2 {
+							clientID = clientParts[0]
+							opID = clientParts[1]
+						}
+						pgID = opParts[1]
+					}
+				}
+			} else if strings.Contains(line, "osd_repop(") {
+				// Extract client ID, op ID and pgID from osd_repop
+				opStart := strings.Index(line, "osd_repop(")
+				opEnd := strings.Index(line[opStart:], ")")
+				if opEnd != -1 {
+					opStr := line[opStart+9 : opStart+opEnd] // Skip "osd_repop("
+					opParts := strings.Fields(opStr)
+					if len(opParts) >= 2 {
+						clientOp := opParts[0]
+						// Remove any leading parentheses
+						clientOp = strings.TrimPrefix(clientOp, "(")
+						// Remove any trailing parentheses
+						clientOp = strings.TrimSuffix(clientOp, ")")
+						clientParts := strings.Split(clientOp, ":")
+						if len(clientParts) == 2 {
+							clientID = clientParts[0]
+							opID = clientParts[1]
+						}
+						pgID = opParts[1]
+					}
+				}
+			} else if strings.Contains(line, "osd_repop_reply(") {
+				// Extract client ID and op ID from osd_repop_reply
+				opStart := strings.Index(line, "osd_repop_reply(")
+				opEnd := strings.Index(line[opStart:], ")")
+				if opEnd != -1 {
+					opStr := line[opStart+16 : opStart+opEnd] // Skip "osd_repop_reply("
+					opParts := strings.Fields(opStr)
+					if len(opParts) >= 2 {
+						clientOp := opParts[0]
+						// Remove any leading parentheses
+						clientOp = strings.TrimPrefix(clientOp, "(")
+						// Remove any trailing parentheses
+						clientOp = strings.TrimSuffix(clientOp, ")")
+						clientParts := strings.Split(clientOp, ":")
+						if len(clientParts) == 2 {
+							clientID = clientParts[0]
+							opID = clientParts[1]
+						}
+						pgID = opParts[1]
+					}
+				}
+			} else if strings.Contains(line, "pg_update_log_missing(") {
+				// Extract client ID and op ID from pg_update_log_missing
+				opStart := strings.Index(line, "by client.")
+				if opStart != -1 {
+					clientPart := line[opStart+3:] // Skip "by "
+					clientEnd := strings.Index(clientPart, " ")
+					if clientEnd != -1 {
+						clientOp := clientPart[:clientEnd]
+						clientParts := strings.Split(clientOp, ":")
+						if len(clientParts) == 2 {
+							clientID = clientParts[0]
+							opID = clientParts[1]
+						}
+					}
+				}
+				// Extract PG ID from pg_update_log_missing
+				pgStart := strings.Index(line, "pg_update_log_missing(")
+				if pgStart != -1 {
+					pgPart := line[pgStart:]
+					pgEnd := strings.Index(pgPart, " epoch")
+					if pgEnd != -1 {
+						pgStr := pgPart[22:pgEnd] // Skip "pg_update_log_missing("
+						pgID = pgStr
+					}
+				}
+			}
+
+			// Extract dequeue latency (in microseconds)
+			dequeueLatency := 0
+			for i, part := range parts {
+				if part == "latency" && i+1 < len(parts) {
+					latencyStr := parts[i+1]
+					// Parse float value (in seconds)
+					latencySec, err := strconv.ParseFloat(latencyStr, 64)
+					if err == nil {
+						// Convert to microseconds
+						dequeueLatency = int(latencySec * 1000000)
+					}
+					break
+				}
+			}
+
+			// Extract priority
+			priority := 0
+			for i, part := range parts {
+				if part == "prio" && i+1 < len(parts) {
+					prioStr := parts[i+1]
+					prio, err := strconv.Atoi(prioStr)
+					if err == nil {
+						priority = prio
+					}
+					break
+				}
+			}
+
+			// Extract cost
+			cost := 0
+			for i, part := range parts {
+				if part == "cost" && i+1 < len(parts) {
+					costStr := parts[i+1]
+					costVal, err := strconv.Atoi(costStr)
+					if err == nil {
+						cost = costVal
+					}
+					break
+				}
+			}
+
+			// Create dequeue event
+			event := types.DequeueEvent{
+				Timestamp:      timestamp,
+				OpType:         opType,
+				ClientID:       clientID,
+				OpID:           opID,
+				PGID:           pgID,
+				DequeueLatency: dequeueLatency,
+				Priority:       priority,
+				Cost:           cost,
 			}
 
 			events = append(events, event)

@@ -21,6 +21,8 @@ func main() {
 		fmt.Println("  op - Analyze OSD operations")
 		fmt.Println("  transaction - Analyze transaction operations")
 		fmt.Println("  metadata - Analyze metadata sync operations")
+		fmt.Println("  client - Analyze client operations")
+		fmt.Println("  dequeue - Analyze dequeue operations")
 		fmt.Println("  all - Analyze all operation types")
 		os.Exit(1)
 	}
@@ -54,6 +56,10 @@ func main() {
 		analyzeTransaction(file, outputFile)
 	case "metadata":
 		analyzeMetadataSync(file, outputFile)
+	case "client":
+		analyzeClientOp(file, outputFile)
+	case "dequeue":
+		analyzeDequeue(file, outputFile)
 	case "all":
 		analyzeAll(file, outputFile)
 	default:
@@ -84,7 +90,7 @@ func analyzeAIO(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeAIOEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(result, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{})
+	htmlContent := html.GenerateHTML(result, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{}, types.ClientOpAnalysisResult{}, types.DequeueAnalysisResult{}, types.AnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -114,7 +120,7 @@ func analyzeRepop(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeRepopEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, result, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{})
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, result, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{}, types.ClientOpAnalysisResult{}, types.DequeueAnalysisResult{}, types.AnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -144,7 +150,7 @@ func analyzeOSDOp(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeOSDOpEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, result, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{})
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, result, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{}, types.ClientOpAnalysisResult{}, types.DequeueAnalysisResult{}, types.AnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -174,7 +180,7 @@ func analyzeTransaction(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeTransactionEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, result, types.MetadataSyncAnalysisResult{})
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, result, types.MetadataSyncAnalysisResult{}, types.ClientOpAnalysisResult{}, types.DequeueAnalysisResult{}, types.AnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -204,7 +210,67 @@ func analyzeMetadataSync(file *os.File, outputFile string) {
 	result := analyzer.AnalyzeMetadataSyncEvents(events)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, result)
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, result, types.ClientOpAnalysisResult{}, types.DequeueAnalysisResult{}, types.AnalysisResult{})
+
+	// Write to file
+	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
+	if err != nil {
+		fmt.Printf("Error writing HTML file: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// analyzeClientOp analyzes client operations
+func analyzeClientOp(file *os.File, outputFile string) {
+	// Reset file pointer
+	file.Seek(0, 0)
+
+	// Parse Client Op events
+	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	events, err := log.ParseClientOpEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Client Op events: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Analyze events
+	result := analyzer.AnalyzeClientOpEvents(events)
+
+	// Generate HTML
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{}, result, types.DequeueAnalysisResult{}, types.AnalysisResult{})
+
+	// Write to file
+	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
+	if err != nil {
+		fmt.Printf("Error writing HTML file: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// analyzeDequeue analyzes dequeue operations
+func analyzeDequeue(file *os.File, outputFile string) {
+	// Reset file pointer
+	file.Seek(0, 0)
+
+	// Parse Dequeue events
+	scanner := bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	events, err := log.ParseDequeueEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Dequeue events: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Analyze events
+	result := analyzer.AnalyzeDequeueEvents(events)
+
+	// Generate HTML
+	htmlContent := html.GenerateHTML(types.AnalysisResult{}, types.AnalysisResult{}, types.OSDOpAnalysisResult{}, types.TransactionAnalysisResult{}, types.MetadataSyncAnalysisResult{}, types.ClientOpAnalysisResult{}, result, types.AnalysisResult{})
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)
@@ -252,6 +318,18 @@ func analyzeAll(file *os.File, outputFile string) {
 		os.Exit(1)
 	}
 
+	// Parse OSD Op V2 events (enqueue_op to sending reply on)
+	file.Seek(0, 0)
+	scanner = bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf = make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	osdOpEventsV2, err := log.ParseOSDOpEventsV2(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing OSD Op V2 events: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Parse Transaction events
 	file.Seek(0, 0)
 	scanner = bufio.NewScanner(file)
@@ -276,15 +354,42 @@ func analyzeAll(file *os.File, outputFile string) {
 		os.Exit(1)
 	}
 
+	// Parse Client Op events
+	file.Seek(0, 0)
+	scanner = bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf = make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	clientOpEvents, err := log.ParseClientOpEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Client Op events: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Parse Dequeue events
+	file.Seek(0, 0)
+	scanner = bufio.NewScanner(file)
+	// Increase scanner buffer size for large log lines
+	buf = make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	dequeueEvents, err := log.ParseDequeueEvents(scanner)
+	if err != nil {
+		fmt.Printf("Error parsing Dequeue events: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Analyze events
 	aioResult := analyzer.AnalyzeAIOEvents(aioEvents)
 	repopResult := analyzer.AnalyzeRepopEvents(repopEvents)
 	osdOpResult := analyzer.AnalyzeOSDOpEvents(osdOpEvents)
+	osdOpResultV2 := analyzer.AnalyzeRepopEvents(osdOpEventsV2) // Reuse the same analyzer function
 	transactionResult := analyzer.AnalyzeTransactionEvents(transactionEvents)
 	metadataSyncResult := analyzer.AnalyzeMetadataSyncEvents(metadataSyncEvents)
+	clientResult := analyzer.AnalyzeClientOpEvents(clientOpEvents)
+	dequeueResult := analyzer.AnalyzeDequeueEvents(dequeueEvents)
 
 	// Generate HTML
-	htmlContent := html.GenerateHTML(aioResult, repopResult, osdOpResult, transactionResult, metadataSyncResult)
+	htmlContent := html.GenerateHTML(aioResult, repopResult, osdOpResult, transactionResult, metadataSyncResult, clientResult, dequeueResult, osdOpResultV2)
 
 	// Write to file
 	err = os.WriteFile(outputFile, []byte(htmlContent), 0644)

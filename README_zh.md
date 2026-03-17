@@ -4,12 +4,16 @@
 
 ## 功能特性
 
-- **多类型分析**：支持分析五种类型的操作：
+- **多类型分析**：支持分析九种类型的操作：
   - AIO (异步 I/O) 操作
   - OSD repop 操作
   - OSD 操作
   - 事务操作
   - 元数据同步操作
+  - 客户端操作
+  - 客户端操作详情
+  - 出队操作
+  - OSD op 事件
 - **HTML 输出**：生成结构良好、视觉美观的 HTML 报告，带有标签页界面
 - **统计摘要**：为每种操作类型显示全面的统计信息
 - **筛选功能**：允许按时间范围和持续时间/延迟进行筛选
@@ -51,6 +55,8 @@ go run main.go <log_file> <analysis_type> [output.html]
 - `op` - 分析 OSD 操作
 - `transaction` - 分析事务操作
 - `metadata` - 分析元数据同步操作
+- `client` - 分析客户端操作
+- `dequeue` - 分析出队操作
 - `all` - 分析所有操作类型
 
 ### 示例
@@ -80,16 +86,36 @@ go run main.go <log_file> <analysis_type> [output.html]
    go run main.go /path/to/ceph-osd.log metadata metadata_analysis.html
    ```
 
+6. 分析客户端操作：
+   ```bash
+   go run main.go /path/to/ceph-osd.log client client_analysis.html
+   ```
+
+7. 分析出队操作：
+   ```bash
+   go run main.go /path/to/ceph-osd.log dequeue dequeue_analysis.html
+   ```
+
 ## 输出
 
 该工具生成的 HTML 报告包含：
 
-- **标签页界面**：每种操作类型都有单独的标签页
+- **标签页界面**：每种操作类型都有单独的标签页，包括：
+  - OSD op 事件
+  - OSD repop 事件
+  - dequeue_op 事件
+  - AIO 事件
+  - 元数据同步
+  - OSD 事件
+  - 复制事务
+  - 客户端事件
+  - 客户端事件详情
 - **查询原理部分**：每种操作类型如何解析和分析的清晰解释
 - **摘要部分**：每个标签页顶部的关键统计信息
 - **筛选表单**：每个表格的时间范围和持续时间/延迟筛选
 - **数据表格**：详细的操作列表，包含时间戳和持续时间
 - **持续时间分布**：按持续时间/延迟范围细分的操作
+- **分页功能**：所有数据表格都有分页功能，默认每页100项
 
 ## 项目结构
 
@@ -100,9 +126,11 @@ analyze_ceph_log/
 ├── .gitignore            # Git 忽略文件
 ├── README.md             # 英文 README
 ├── README_zh.md          # 中文 README
+├── js/                   # 前端功能的 JavaScript 文件
 └── pkg/                  # 包目录
     ├── analyzer/         # 分析逻辑
     ├── html/             # HTML 生成
+    │   └── panels/       # 面板特定的 HTML 生成
     ├── log/              # 日志解析
     └── types/            # 类型定义
 ```
