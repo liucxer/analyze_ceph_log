@@ -117,6 +117,10 @@ go run main.go <log_file> <analysis_type> [output.html]
 - **持续时间分布**：按持续时间/延迟范围细分的操作
 - **分页功能**：所有数据表格都有分页功能，默认每页100项
 
+### HTML 报告截图
+
+![HTML 报告截图](demo.png)
+
 ## 项目结构
 
 ```

@@ -117,6 +117,10 @@ The tool generates an HTML report with:
 - **Duration Distribution**: Breakdown of operations by duration/latency ranges
 - **Pagination**: Pagination for all data tables with default 100 items per page
 
+### HTML Report Screenshot
+
+![HTML Report Screenshot](demo.png)
+
 ## Project Structure
 
 ```
